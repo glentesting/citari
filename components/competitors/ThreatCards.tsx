@@ -31,7 +31,11 @@ export default function ThreatCards({ competitors, onDeleted }: ThreatCardsProps
 
   async function deleteCompetitor(id: string, name: string) {
     if (!window.confirm(`Delete ${name} and all their data? This cannot be undone.`)) return
-    await supabase.from('competitors').delete().eq('id', id)
+    await fetch('/api/competitors/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ competitor_id: id }),
+    })
     onDeleted()
   }
 

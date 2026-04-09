@@ -8,6 +8,7 @@ import WorkspaceModeTab from '@/components/settings/WorkspaceModeTab'
 import WordPressConnection from '@/components/settings/WordPressConnection'
 import CMSConnectionCard from '@/components/settings/CMSConnectionCard'
 import BillingTab from '@/components/settings/BillingTab'
+import NotificationsTab from '@/components/settings/NotificationsTab'
 
 const tabs = [
   { id: 'workspace', label: 'Workspace Mode' },
@@ -103,15 +104,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === 'notifications' && (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-              <p className="text-sm text-gray-500">
-                Email notifications are sent when visibility drops more than 5%.
-                {' '}In Consultant Mode, alerts include strategic context and action recommendations.
-                {' '}In Direct Mode, alerts are in plain English with simple next steps.
-              </p>
-            </div>
-          )}
+          {activeTab === 'notifications' && <NotificationsTab />}
 
           {activeTab === 'profile' && <ProfileTab />}
         </div>

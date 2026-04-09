@@ -24,16 +24,25 @@ export default function ClientSwitcher() {
   }, [])
 
   async function handleDelete(clientId: string) {
-    const supabase = createClient()
-    await supabase.from('clients').delete().eq('id', clientId)
+    try {
+      const res = await fetch('/api/clients/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Failed to delete')
+        return
+      }
+    } catch {
+      alert('Delete failed')
+      return
+    }
     setConfirmDeleteId(null)
-
-    // If we deleted the active client, clear it
     if (activeClient?.id === clientId) {
-      // refreshClients will auto-select the next available client
       localStorage.removeItem('citari_active_client')
     }
-
     await refreshClients()
   }
 

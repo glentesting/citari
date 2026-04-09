@@ -33,7 +33,23 @@ export default function KeywordsPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [newKeyword, setNewKeyword] = useState('')
   const [adding, setAdding] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const supabase = createClient()
+
+  async function handleGenerateKeywords() {
+    if (!activeClient) return
+    setGenerating(true)
+    try {
+      // Call setup endpoint which generates keywords
+      await fetch('/api/clients/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: activeClient.id }),
+      })
+      fetchKeywords()
+    } catch { /* */ }
+    setGenerating(false)
+  }
 
   const fetchKeywords = useCallback(async () => {
     if (!activeClient) { setKeywords([]); setLoading(false); return }
@@ -145,10 +161,16 @@ export default function KeywordsPage() {
             <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
               Track where {activeClient.name} ranks on Google and whether those keywords show up in AI responses.
             </p>
-            <button onClick={() => setShowAdd(true)}
-              className="px-4 py-2 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand-dark transition-colors">
-              Add your first keyword
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={handleGenerateKeywords} disabled={generating}
+                className="px-4 py-2 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand-dark disabled:opacity-50">
+                {generating ? 'Generating...' : 'Auto-Generate Top Keywords'}
+              </button>
+              <button onClick={() => setShowAdd(true)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                Add manually
+              </button>
+            </div>
           </div>
         ) : (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

@@ -66,9 +66,22 @@ export default function BacklinkOpportunities() {
     setDiscovering(false)
   }
 
+  const [outreachId, setOutreachId] = useState<string | null>(null)
+
   async function updateStatus(id: string, status: string) {
     await supabase.from('backlink_opportunities').update({ status }).eq('id', id)
     setOpportunities((prev) => prev.map((o) => o.id === id ? { ...o, status } : o))
+  }
+
+  function getOutreachTemplate(domain: string, type: string) {
+    const clientName = activeClient?.name || 'our company'
+    if (type === 'guest_post') {
+      return `Hi there,\n\nI came across ${domain} and really enjoyed your content. I'd love to contribute a guest post that would be valuable to your audience — specifically about ${activeClient?.industry || 'our industry'}.\n\nWe're ${clientName} and we have unique insights to share. Would you be open to a guest contribution?\n\nBest regards`
+    }
+    if (type === 'resource_page') {
+      return `Hi,\n\nI noticed your resource page on ${domain} — great collection! I think ${clientName} would be a valuable addition for your readers. We provide ${activeClient?.industry || 'relevant services'} and our site has in-depth guides your audience would find useful.\n\nWould you consider adding us to your list?\n\nThanks!`
+    }
+    return `Hi,\n\nI noticed ${domain} covers topics related to ${activeClient?.industry || 'our industry'}. I'm reaching out from ${clientName} — we'd love to explore a partnership or mention.\n\nWould you be open to a quick conversation?\n\nBest regards`
   }
 
   if (!activeClient) return null
@@ -136,7 +149,19 @@ export default function BacklinkOpportunities() {
                     {o.source_url && (
                       <a href={o.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand hover:underline">View →</a>
                     )}
+                    <button onClick={() => setOutreachId(outreachId === o.id ? null : o.id)} className="text-xs text-brand hover:underline">
+                      {outreachId === o.id ? 'Hide template' : 'Outreach template'}
+                    </button>
                   </div>
+                  {outreachId === o.id && (
+                    <div className="mt-2 bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-gray-500 font-medium">Outreach Email Template</span>
+                        <button onClick={() => navigator.clipboard.writeText(getOutreachTemplate(o.source_domain, o.opportunity_type))} className="text-[10px] text-brand hover:underline">Copy</button>
+                      </div>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap">{getOutreachTemplate(o.source_domain, o.opportunity_type)}</pre>
+                    </div>
+                  )}
                 </div>
                 <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)}
                   className="text-xs border border-gray-200 rounded px-2 py-1 bg-white">
