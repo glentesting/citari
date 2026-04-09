@@ -3,9 +3,16 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
+import CompetitorSuggestions from '@/components/layout/CompetitorSuggestions'
 
 interface AddClientModalProps {
   onClose: () => void
+}
+
+interface DiscoveredCompetitor {
+  name: string
+  domain: string | null
+  reason: string
 }
 
 export default function AddClientModal({ onClose }: AddClientModalProps) {
@@ -14,6 +21,10 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
   const [industry, setIndustry] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [discovering, setDiscovering] = useState(false)
+  const [suggestions, setSuggestions] = useState<DiscoveredCompetitor[] | null>(null)
+  const [createdClientId, setCreatedClientId] = useState<string | null>(null)
+  const [createdClientName, setCreatedClientName] = useState('')
   const { refreshClients, setActiveClient } = useClient()
   const supabase = createClient()
 
@@ -22,7 +33,6 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
     setLoading(true)
     setError(null)
 
-    // Get workspace_id from user_settings
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setError('Not authenticated')
@@ -62,8 +72,69 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
     await refreshClients()
     if (client) {
       setActiveClient(client)
+      setCreatedClientId(client.id)
+      setCreatedClientName(client.name)
     }
-    onClose()
+
+    // Discover competitors in background
+    setLoading(false)
+    setDiscovering(true)
+
+    try {
+      const res = await fetch('/api/competitors/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: client.id }),
+      })
+
+      const data = await res.json()
+      if (res.ok && data.competitors && data.competitors.length > 0) {
+        setSuggestions(data.competitors)
+      } else {
+        // No suggestions or error — just close
+        onClose()
+      }
+    } catch {
+      // Discovery failed silently — just close
+      onClose()
+    } finally {
+      setDiscovering(false)
+    }
+  }
+
+  // Show competitor suggestions after client creation
+  if (suggestions && createdClientId) {
+    return (
+      <CompetitorSuggestions
+        clientId={createdClientId}
+        clientName={createdClientName}
+        suggestions={suggestions}
+        onDone={() => {
+          refreshClients()
+          onClose()
+        }}
+      />
+    )
+  }
+
+  // Discovering state
+  if (discovering) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md p-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <svg className="w-5 h-5 text-brand animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-sm font-semibold text-gray-900">Discovering competitors...</span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Analyzing {createdClientName}&apos;s industry to find likely competitors.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -121,7 +192,7 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-              placeholder="SaaS, Marketing, etc."
+              placeholder="SaaS, Marketing, Roofing, etc."
             />
           </div>
 
