@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import PortalSettings from '@/components/settings/PortalSettings'
+import ProfileTab from '@/components/settings/ProfileTab'
 
 const tabs = [
   { id: 'portal', label: 'Client Portal' },
@@ -61,11 +62,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === 'profile' && (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-              <p className="text-sm text-gray-500">Profile management coming soon.</p>
-            </div>
-          )}
+          {activeTab === 'profile' && <ProfileTab />}
         </div>
       </div>
     </div>

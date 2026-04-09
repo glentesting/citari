@@ -69,8 +69,16 @@ export default function ReportsPage() {
               <p className="text-sm text-gray-400">Loading reports...</p>
             </div>
           ) : reports.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-              <p className="text-sm text-gray-500">No reports generated yet. PDF report builder coming soon.</p>
+            <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+              <div className="w-12 h-12 bg-brand-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
+                </svg>
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">No reports yet</h3>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                Generate AI executive narratives above, or use the upcoming PDF report builder to create white-label client deliverables.
+              </p>
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

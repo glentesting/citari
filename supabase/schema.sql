@@ -21,6 +21,7 @@ create table clients (
     domain text,
     industry text,
     notes text,
+    avatar_url text,
     created_at timestamptz default now()
 );
 

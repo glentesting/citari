@@ -5,6 +5,7 @@ export interface Client {
   domain: string | null
   industry: string | null
   notes: string | null
+  avatar_url: string | null
   created_at: string
 }
 

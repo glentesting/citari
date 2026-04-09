@@ -63,6 +63,13 @@ export default function ClientSwitcher() {
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
+                {client.avatar_url ? (
+                  <img src={client.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <span className="w-5 h-5 rounded-full bg-brand-bg text-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    {client.name[0]}
+                  </span>
+                )}
                 <span className="truncate">{client.name}</span>
                 {client.domain && (
                   <span className="text-xs text-gray-400 truncate">{client.domain}</span>
