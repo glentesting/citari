@@ -11,6 +11,8 @@ interface AddPromptFormProps {
 export default function AddPromptForm({ onAdded }: AddPromptFormProps) {
   const [text, setText] = useState('')
   const [category, setCategory] = useState<'awareness' | 'evaluation' | 'purchase'>('awareness')
+  const [isConversational, setIsConversational] = useState(false)
+  const [language, setLanguage] = useState('en')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { activeClient } = useClient()
@@ -29,6 +31,7 @@ export default function AddPromptForm({ onAdded }: AddPromptFormProps) {
         client_id: activeClient.id,
         text: text.trim(),
         category,
+        language,
       })
 
     if (insertError) {
@@ -70,6 +73,31 @@ export default function AddPromptForm({ onAdded }: AddPromptFormProps) {
             <option value="evaluation">Evaluation</option>
             <option value="purchase">Purchase</option>
           </select>
+
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white"
+          >
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="pt">Portuguese</option>
+            <option value="it">Italian</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+          </select>
+
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isConversational}
+              onChange={(e) => setIsConversational(e.target.checked)}
+              className="rounded border-gray-300 text-brand focus:ring-brand"
+            />
+            Conversational
+          </label>
 
           <button
             type="submit"

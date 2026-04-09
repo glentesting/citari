@@ -23,6 +23,8 @@ export interface Prompt {
   text: string
   category: 'awareness' | 'evaluation' | 'purchase'
   is_active: boolean
+  language: string
+  market: string
   created_at: string
 }
 
