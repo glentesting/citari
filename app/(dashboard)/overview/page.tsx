@@ -22,6 +22,8 @@ interface ShareEntry {
 interface OverviewData {
   visibilityScore: number
   avgMentionPosition: number | null
+  avgAuthorityScore: number | null
+  leadingPct: number
   shareOfVoice: ShareEntry[]
   clientShare: number
   competitorGapCount: number
@@ -57,7 +59,7 @@ export default function OverviewPage() {
     // Fetch scan results for last 30 days
     const { data: scanResults } = await supabase
       .from('scan_results')
-      .select('model, mentioned, mention_position, competitor_mentions, prompt_id')
+      .select('model, mentioned, mention_position, mention_quality, authority_score, competitor_mentions, prompt_id')
       .eq('client_id', activeClient.id)
       .gte('scanned_at', since)
 
@@ -77,6 +79,18 @@ export default function OverviewPage() {
     const avgPosition = positions.length > 0
       ? Math.round((positions.reduce((a, b) => a + b, 0) / positions.length) * 10) / 10
       : null
+
+    // Average authority score (0-100 scale, from 1-10 per result)
+    const authorityScores = results
+      .filter((r: any) => r.authority_score != null && r.authority_score > 0)
+      .map((r: any) => r.authority_score as number)
+    const avgAuthority = authorityScores.length > 0
+      ? Math.round((authorityScores.reduce((a, b) => a + b, 0) / authorityScores.length) * 10)
+      : null
+
+    // Leading mention percentage
+    const leadingCount = results.filter((r: any) => r.mention_quality === 'leading').length
+    const leadingPct = totalResults > 0 ? Math.round((leadingCount / totalResults) * 100) : 0
 
     // Per-platform rates
     const models = ['chatgpt', 'claude', 'gemini'] as const
@@ -218,6 +232,8 @@ export default function OverviewPage() {
     setData({
       visibilityScore,
       avgMentionPosition: avgPosition,
+      avgAuthorityScore: avgAuthority,
+      leadingPct,
       shareOfVoice,
       clientShare,
       competitorGapCount: gapMap.size,
@@ -368,13 +384,13 @@ export default function OverviewPage() {
               changeType: d.visibilityScore >= 50 ? 'positive' : 'negative',
             },
             {
-              label: 'Avg Mention Position',
-              value: d.avgMentionPosition !== null ? `#${d.avgMentionPosition}` : '—',
-              change: d.avgMentionPosition !== null
-                ? d.avgMentionPosition <= 2 ? 'Excellent placement' : d.avgMentionPosition <= 4 ? 'Good placement' : 'Room to improve'
+              label: 'Authority Score',
+              value: d.avgAuthorityScore !== null ? `${d.avgAuthorityScore}/100` : '—',
+              change: d.avgAuthorityScore !== null
+                ? d.avgAuthorityScore >= 70 ? 'Strong authority' : d.avgAuthorityScore >= 40 ? 'Building authority' : 'Needs improvement'
                 : 'No data yet',
-              changeType: d.avgMentionPosition !== null
-                ? d.avgMentionPosition <= 3 ? 'positive' : 'neutral'
+              changeType: d.avgAuthorityScore !== null
+                ? d.avgAuthorityScore >= 60 ? 'positive' : d.avgAuthorityScore >= 30 ? 'neutral' : 'negative'
                 : 'neutral',
             },
             {

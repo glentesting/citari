@@ -33,6 +33,12 @@ export interface ScanResult {
   model: 'chatgpt' | 'claude' | 'gemini'
   mentioned: boolean
   mention_position: number | null
+  mention_quality: string | null
+  authority_score: number | null
+  recommendation_strength: string | null
+  why_competitor_wins: string | null
+  citation_sources: string[] | null
+  citation_source_types: string[] | null
   sentiment: 'positive' | 'neutral' | 'negative'
   response_excerpt: string | null
   competitor_mentions: string[]

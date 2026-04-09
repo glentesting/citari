@@ -15,30 +15,48 @@ const categoryLabels: Record<string, { label: string; bg: string; text: string }
   purchase: { label: 'Purchase', bg: 'bg-green-50', text: 'text-green-700' },
 }
 
-function MentionDot({ mentioned, position }: { mentioned: boolean | null; position?: number | null }) {
-  if (mentioned === null) {
-    return <span className="w-3 h-3 rounded-full bg-gray-200" title="Not scanned" />
+function QualityIndicator({ result }: { result: ScanResult | null }) {
+  if (!result) {
+    return <span className="w-3.5 h-3.5 rounded-full bg-gray-200" title="Not scanned" />
   }
-  if (!mentioned) {
-    return <span className="w-3 h-3 rounded-full bg-red-400" title="Not mentioned" />
-  }
-  // Mentioned — show position badge if available
-  if (position && position <= 5) {
-    const colors = position === 1
-      ? 'bg-green-500 text-white'
-      : position <= 3
-      ? 'bg-green-400 text-white'
-      : 'bg-green-300 text-green-900'
+
+  const quality = result.mention_quality
+  const why = result.why_competitor_wins
+
+  // Leading — crown icon
+  if (quality === 'leading') {
     return (
-      <span
-        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${colors}`}
-        title={`Mentioned #${position}`}
-      >
-        {position}
+      <span className="text-amber-500" title={`Leading mention (authority: ${result.authority_score || '?'}/10)`}>
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 1l2.39 4.84L17.5 6.7l-3.75 3.66.89 5.14L10 13l-4.64 2.5.89-5.14L2.5 6.7l5.11-.86L10 1z" />
+        </svg>
       </span>
     )
   }
-  return <span className="w-3 h-3 rounded-full bg-green-500" title="Mentioned" />
+
+  // Supporting — green dot
+  if (quality === 'supporting') {
+    return <span className="w-3.5 h-3.5 rounded-full bg-green-500" title={`Supporting mention (authority: ${result.authority_score || '?'}/10)`} />
+  }
+
+  // Mentioned — gray-green dot
+  if (quality === 'mentioned' || result.mentioned) {
+    return <span className="w-3.5 h-3.5 rounded-full bg-green-300" title={`Mentioned (authority: ${result.authority_score || '?'}/10)`} />
+  }
+
+  // Not mentioned — red if competitor wins, gray otherwise
+  if (why) {
+    return (
+      <span className="relative group">
+        <span className="w-3.5 h-3.5 rounded-full bg-red-400 block cursor-help" />
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 max-w-[200px] text-center">
+          {why}
+        </span>
+      </span>
+    )
+  }
+
+  return <span className="w-3.5 h-3.5 rounded-full bg-gray-300" title="Not mentioned" />
 }
 
 export default function PromptTable({ prompts, scanResults, onUpdated }: PromptTableProps) {
@@ -131,9 +149,9 @@ export default function PromptTable({ prompts, scanResults, onUpdated }: PromptT
               </span>
             </div>
             <div className="px-4 py-3 flex items-center justify-center gap-4">
-              <MentionDot mentioned={gpt ? gpt.mentioned : null} position={gpt?.mention_position} />
-              <MentionDot mentioned={claude ? claude.mentioned : null} position={claude?.mention_position} />
-              <MentionDot mentioned={gemini ? gemini.mentioned : null} position={gemini?.mention_position} />
+              <QualityIndicator result={gpt || null} />
+              <QualityIndicator result={claude || null} />
+              <QualityIndicator result={gemini || null} />
             </div>
             <div className="px-4 py-3 flex items-center justify-center">
               <button
