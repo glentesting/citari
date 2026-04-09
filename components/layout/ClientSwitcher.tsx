@@ -9,8 +9,6 @@ export default function ClientSwitcher() {
   const { clients, activeClient, setActiveClient, refreshClients, loading } = useClient()
   const [open, setOpen] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
-  const [deleting, setDeleting] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -22,16 +20,6 @@ export default function ClientSwitcher() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  async function handleDelete() {
-    if (!deleteTarget) return
-    setDeleting(true)
-    const supabase = createClient()
-    await supabase.from('clients').delete().eq('id', deleteTarget.id)
-    setDeleteTarget(null)
-    setDeleting(false)
-    await refreshClients()
-  }
 
   if (loading) {
     return (
@@ -87,7 +75,14 @@ export default function ClientSwitcher() {
                   </button>
                   {!isActive && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: client.id, name: client.name }) }}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        if (window.confirm(`Delete ${client.name} and all their data? This cannot be undone.`)) {
+                          const supabase = createClient()
+                          await supabase.from('clients').delete().eq('id', client.id)
+                          refreshClients()
+                        }
+                      }}
                       className="p-1.5 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
                       title="Delete client"
                     >
@@ -111,33 +106,6 @@ export default function ClientSwitcher() {
               </svg>
               Add new client
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Delete confirmation */}
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">Delete {deleteTarget.name}?</h3>
-            <p className="text-sm text-gray-500 mb-5">
-              This will permanently delete <strong>{deleteTarget.name}</strong> and all their data — prompts, scan results, competitors, content, and reports. This cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
           </div>
         </div>
       )}
