@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
 import PageHeader from '@/components/layout/PageHeader'
 import NarrativeGenerator from '@/components/reports/NarrativeGenerator'
+import PRBrief from '@/components/reports/PRBrief'
 import { formatDate } from '@/lib/utils'
 import type { Report } from '@/types'
 
@@ -56,6 +57,7 @@ export default function ReportsPage() {
 
       <div className="mt-6 space-y-6">
         <NarrativeGenerator />
+        <PRBrief />
 
         {/* Report History */}
         <div>

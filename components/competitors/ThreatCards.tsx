@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
+import CompetitiveBrief from '@/components/competitors/CompetitiveBrief'
 
 export interface CompetitorThreat {
   id: string
@@ -117,6 +118,9 @@ export default function ThreatCards({ competitors, onDeleted }: ThreatCardsProps
               <p className="text-xs text-gray-500">
                 Winning on <span className="font-semibold text-gray-900">{comp.promptsWinning}</span> of {comp.totalPrompts} prompts
               </p>
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <CompetitiveBrief competitorId={comp.id} competitorName={comp.name} />
+              </div>
             </div>
           </div>
         )

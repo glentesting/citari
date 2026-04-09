@@ -10,6 +10,8 @@ import HeadToHead from '@/components/competitors/HeadToHead'
 import InsightBanner from '@/components/competitors/InsightBanner'
 import ContentFingerprint from '@/components/competitors/ContentFingerprint'
 import AdIntelligence from '@/components/competitors/AdIntelligence'
+import ContentGapAnalysis from '@/components/competitors/ContentGapAnalysis'
+import CompetitiveBrief from '@/components/competitors/CompetitiveBrief'
 import type { Competitor, ScanResult } from '@/types'
 
 interface PromptComparison {
@@ -281,6 +283,9 @@ export default function CompetitorsPage() {
                 </div>
               </div>
             )}
+
+            {/* Content Gap Analysis */}
+            <ContentGapAnalysis />
 
             {/* Ad Intelligence */}
             {competitors.length > 0 && (

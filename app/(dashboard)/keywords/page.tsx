@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
 import PageHeader from '@/components/layout/PageHeader'
+import BacklinkOpportunities from '@/components/keywords/BacklinkOpportunities'
 import type { Keyword } from '@/types'
 
 const difficultyColors: Record<string, string> = {
@@ -220,6 +221,8 @@ export default function KeywordsPage() {
             ))}
           </div>
         )}
+
+        <BacklinkOpportunities />
       </div>
     </div>
   )

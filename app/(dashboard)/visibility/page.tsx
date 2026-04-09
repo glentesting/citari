@@ -8,6 +8,8 @@ import PlatformCards from '@/components/visibility/PlatformCards'
 import AddPromptForm from '@/components/visibility/AddPromptForm'
 import SuggestedPrompts from '@/components/visibility/SuggestedPrompts'
 import PromptTable from '@/components/visibility/PromptTable'
+import CitationSourceBreakdown from '@/components/visibility/CitationSourceBreakdown'
+import SeasonalityView from '@/components/visibility/SeasonalityView'
 import type { Prompt, ScanResult } from '@/types'
 
 export default function VisibilityPage() {
@@ -190,6 +192,10 @@ export default function VisibilityPage() {
             <PromptTable prompts={prompts} scanResults={scanResults} onUpdated={fetchData} />
           </div>
         )}
+
+        {/* Citation sources + Seasonality */}
+        <CitationSourceBreakdown />
+        <SeasonalityView />
       </div>
     </div>
   )

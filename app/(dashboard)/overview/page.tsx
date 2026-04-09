@@ -14,6 +14,8 @@ import ShareOfVoice from '@/components/overview/ShareOfVoice'
 import Simulator from '@/components/overview/Simulator'
 import BenchmarkComparison from '@/components/overview/BenchmarkComparison'
 import PredictiveAlerts from '@/components/overview/PredictiveAlerts'
+import ReviewIntelligence from '@/components/overview/ReviewIntelligence'
+import NAPAudit from '@/components/overview/NAPAudit'
 
 interface ShareEntry {
   name: string
@@ -447,6 +449,8 @@ export default function OverviewPage() {
           }
         />
 
+        <ReviewIntelligence />
+        <NAPAudit />
         <Simulator currentScore={d.visibilityScore} />
       </div>
     </div>
