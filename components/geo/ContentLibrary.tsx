@@ -1,9 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { GeoContent } from '@/types'
 import { formatDate } from '@/lib/utils'
+
+interface WPConnection {
+  id: string
+  site_url: string
+}
 
 interface ContentLibraryProps {
   content: GeoContent[]
@@ -32,6 +37,40 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
   const [urlValue, setUrlValue] = useState('')
   const [schedulingId, setSchedulingId] = useState<string | null>(null)
   const [scheduleDate, setScheduleDate] = useState('')
+  const [wpConnections, setWpConnections] = useState<WPConnection[]>([])
+  const [pushingId, setPushingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadWP() {
+      try {
+        const { data } = await supabase
+          .from('cms_connections')
+          .select('id, site_url')
+          .eq('platform', 'wordpress')
+          .eq('is_active', true)
+        setWpConnections(data || [])
+      } catch { /* */ }
+    }
+    loadWP()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function pushToWordPress(contentId: string, connectionId: string) {
+    setPushingId(contentId)
+    try {
+      const res = await fetch('/api/integrations/wordpress/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content_id: contentId, connection_id: connectionId }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.post_url) window.open(data.post_url, '_blank')
+        onUpdated()
+      }
+    } catch { /* */ }
+    setPushingId(null)
+  }
 
   async function handlePublish(id: string) {
     setEditingUrl(id)
@@ -180,6 +219,20 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                       </svg>
                     </button>
+                    {wpConnections.length > 0 && (
+                      <button
+                        onClick={() => pushToWordPress(item.id, wpConnections[0].id)}
+                        disabled={pushingId === item.id}
+                        className="text-blue-500 hover:text-blue-700 transition-colors"
+                        title={`Push to ${wpConnections[0].site_url}`}
+                      >
+                        {pushingId === item.id ? (
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M21.469 6.825c.84 1.537 1.318 3.3 1.318 5.175 0 3.979-2.156 7.456-5.363 9.325l3.295-9.527c.615-1.54.82-2.771.82-3.864 0-.397-.026-.766-.07-1.109zm-7.981.105c.647-.034 1.23-.1 1.23-.1.578-.068.51-.919-.068-.886 0 0-1.738.136-2.86.136-1.054 0-2.826-.136-2.826-.136-.578-.033-.645.852-.068.886 0 0 .549.066 1.13.1l1.679 4.606-2.359 7.072-3.927-11.678c.647-.034 1.23-.1 1.23-.1.578-.068.51-.919-.068-.886 0 0-1.738.136-2.86.136-.201 0-.438-.008-.69-.015C4.38 3.648 7.853 2 11.787 2c2.926 0 5.591 1.12 7.588 2.953-.048-.003-.095-.014-.144-.014-1.054 0-1.8.919-1.8 1.906 0 .886.51 1.636 1.054 2.522.408.715.886 1.636.886 2.962 0 .919-.354 1.985-.82 3.47l-1.075 3.59-3.888-11.559z"/></svg>
+                        )}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <button

@@ -5,6 +5,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import PortalSettings from '@/components/settings/PortalSettings'
 import ProfileTab from '@/components/settings/ProfileTab'
 import WorkspaceModeTab from '@/components/settings/WorkspaceModeTab'
+import WordPressConnection from '@/components/settings/WordPressConnection'
 
 const tabs = [
   { id: 'workspace', label: 'Workspace Mode' },
@@ -45,8 +46,11 @@ export default function SettingsPage() {
           {activeTab === 'portal' && <PortalSettings />}
 
           {activeTab === 'integrations' && (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-              <p className="text-sm text-gray-500">CMS integrations coming soon — WordPress, Webflow, HubSpot, Ghost, Shopify.</p>
+            <div className="space-y-4">
+              <WordPressConnection />
+              <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+                <p className="text-xs text-gray-400">More integrations coming: Webflow, HubSpot, Ghost, Shopify</p>
+              </div>
             </div>
           )}
 
