@@ -76,6 +76,11 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
       setCreatedClientName(client.name)
     }
 
+    if (!client) {
+      onClose()
+      return
+    }
+
     // Discover competitors in background
     setLoading(false)
     setDiscovering(true)
@@ -87,18 +92,28 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
         body: JSON.stringify({ client_id: client.id }),
       })
 
-      const data = await res.json()
-      if (res.ok && data.competitors && data.competitors.length > 0) {
+      if (!res.ok) {
+        onClose()
+        return
+      }
+
+      let data: any
+      try {
+        data = await res.json()
+      } catch {
+        onClose()
+        return
+      }
+
+      if (data?.competitors && Array.isArray(data.competitors) && data.competitors.length > 0) {
         setSuggestions(data.competitors)
+        setDiscovering(false)
       } else {
-        // No suggestions or error — just close
         onClose()
       }
     } catch {
       // Discovery failed silently — just close
       onClose()
-    } finally {
-      setDiscovering(false)
     }
   }
 
