@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { scanPrompt } from '@/lib/ai/scan'
 
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   const cookieStore = cookies()
 

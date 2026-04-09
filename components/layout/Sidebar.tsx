@@ -78,9 +78,10 @@ const bottomItems = [
 
 interface SidebarProps {
   userEmail?: string
+  userName?: string
 }
 
-export default function Sidebar({ userEmail }: SidebarProps) {
+export default function Sidebar({ userEmail, userName }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -165,11 +166,14 @@ export default function Sidebar({ userEmail }: SidebarProps) {
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-brand-bg rounded-full flex items-center justify-center">
               <span className="text-sm font-semibold text-brand">
-                {userEmail ? userEmail[0].toUpperCase() : '?'}
+                {(userName || userEmail || '?')[0].toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              {userName && (
+                <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+              )}
+              <p className={`${userName ? 'text-xs text-gray-500' : 'text-sm font-medium text-gray-900'} truncate`}>
                 {userEmail || 'User'}
               </p>
             </div>

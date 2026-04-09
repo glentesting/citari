@@ -240,42 +240,40 @@ export default function ProfileTab() {
           </div>
 
           {/* Danger Zone */}
-          <div className="bg-white border border-red-200 rounded-xl p-5">
-            <h3 className="text-xs font-semibold text-red-500 mb-1">Danger Zone</h3>
-            {!showDelete ? (
+          {!showDelete ? (
+            <div className="pt-2 border-t border-gray-100">
+              <button onClick={() => setShowDelete(true)}
+                className="text-xs text-red-400 hover:text-red-600 underline">
+                Delete account
+              </button>
+              <p className="text-[10px] text-gray-300 mt-1">Permanently deletes all data</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-red-200 rounded-xl p-5 space-y-3">
+              <h3 className="text-xs font-semibold text-red-500">Confirm account deletion</h3>
               <div>
-                <button onClick={() => setShowDelete(true)}
-                  className="px-3 py-1.5 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
-                  Delete Account
+                <label className="block text-xs font-medium text-gray-600 mb-1">Type your email to confirm</label>
+                <input type="text" value={deleteEmail} onChange={(e) => setDeleteEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" placeholder={email} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Type &quot;delete my entire account&quot; to confirm</label>
+                <input type="text" value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  onPaste={(e) => e.preventDefault()}
+                  className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="delete my entire account" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleDeleteAccount} disabled={!canDelete}
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Permanently Delete Account
                 </button>
-                <p className="text-[11px] text-gray-400 mt-2">This permanently deletes your account and all client data.</p>
+                <button onClick={() => { setShowDelete(false); setDeleteEmail(''); setDeleteConfirm('') }}
+                  className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900">Cancel</button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Type your email to confirm</label>
-                  <input type="text" value={deleteEmail} onChange={(e) => setDeleteEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" placeholder={email} />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Type &quot;delete my entire account&quot; to confirm</label>
-                  <input type="text" value={deleteConfirm}
-                    onChange={(e) => setDeleteConfirm(e.target.value)}
-                    onPaste={(e) => e.preventDefault()}
-                    className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="delete my entire account" />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handleDeleteAccount} disabled={!canDelete}
-                    className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Permanently Delete Account
-                  </button>
-                  <button onClick={() => { setShowDelete(false); setDeleteEmail(''); setDeleteConfirm('') }}
-                    className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900">Cancel</button>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

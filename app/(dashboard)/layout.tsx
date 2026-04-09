@@ -40,7 +40,7 @@ export default async function DashboardLayout({
   return (
     <ClientProviderWrapper workspaceId={workspaceId}>
       <div className="flex h-screen bg-[#F9FAFB]">
-        <Sidebar userEmail={user.email} />
+        <Sidebar userEmail={user.email} userName={user.user_metadata?.full_name || user.user_metadata?.first_name || undefined} />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-8 py-8">
             {children}

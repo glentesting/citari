@@ -24,10 +24,7 @@ export async function searchKeyword(
   try {
     const res = await fetch(SERPER_API_URL, {
       method: 'POST',
-      headers: {
-        'X-API-KEY': apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ q: keyword, gl: 'us', hl: 'en', num: 20 }),
       signal: AbortSignal.timeout(10000),
     })
@@ -39,7 +36,6 @@ export async function searchKeyword(
     const data = await res.json()
     const organic = data.organic || []
 
-    // Find client position
     const clientDomainLower = clientDomain.toLowerCase().replace(/^www\./, '')
     let position: number | null = null
     for (const result of organic) {
@@ -50,7 +46,6 @@ export async function searchKeyword(
       }
     }
 
-    // Find first competitor
     let topCompetitorName: string | null = null
     let topCompetitorRank: number | null = null
     for (const result of organic) {
@@ -79,20 +74,45 @@ export async function searchKeyword(
 }
 
 /**
- * Discover keywords a domain likely ranks for using related searches.
+ * Generate industry-specific seed keywords.
  */
-export async function discoverKeywords(domain: string, industry: string | null): Promise<string[]> {
-  const apiKey = process.env.SERPER_API_KEY
-  if (!apiKey) return []
-
-  const queries = [
-    `site:${domain}`,
-    industry ? `best ${industry}` : `${domain} reviews`,
+export function generateSeedKeywords(industry: string | null, clientName: string): string[] {
+  const ind = (industry || clientName).toLowerCase().trim()
+  return [
+    `best ${ind}`,
+    `${ind} services`,
+    `${ind} near me`,
+    `top ${ind} companies`,
+    `${ind} reviews`,
+    `${ind} pricing`,
+    `best ${ind} for small business`,
+    `${ind} vs`,
   ]
+}
+
+/**
+ * Discover keywords for a client by searching industry seed queries.
+ */
+export async function discoverKeywords(
+  domain: string,
+  industry: string | null,
+  clientName: string
+): Promise<string[]> {
+  const apiKey = process.env.SERPER_API_KEY
+  const seeds = generateSeedKeywords(industry, clientName)
+
+  if (!apiKey) {
+    // No API key — return seed keywords so they can be saved with null ranks
+    return seeds.slice(0, 8)
+  }
 
   const keywords = new Set<string>()
+  for (const seed of seeds) {
+    keywords.add(seed)
+  }
 
-  for (const q of queries) {
+  // Search a couple seeds to get People Also Ask keywords
+  for (const q of seeds.slice(0, 2)) {
     try {
       const res = await fetch(SERPER_API_URL, {
         method: 'POST',
@@ -104,13 +124,6 @@ export async function discoverKeywords(domain: string, industry: string | null):
       if (!res.ok) continue
       const data = await res.json()
 
-      // Extract related searches as keyword ideas
-      const related = data.relatedSearches || []
-      for (const r of related) {
-        if (r.query) keywords.add(r.query)
-      }
-
-      // Extract "people also ask" as keyword ideas
       const paa = data.peopleAlsoAsk || []
       for (const p of paa) {
         if (p.question) keywords.add(p.question)

@@ -54,7 +54,15 @@ export async function POST(request: Request) {
   const urls = await crawlCompetitorSitemap(competitor.domain)
 
   if (urls.length === 0) {
-    return NextResponse.json({ error: 'No content URLs found in sitemap' }, { status: 404 })
+    // Last resort: try fetching the homepage itself as the only content page
+    const fallbackUrl = `https://${competitor.domain}`
+    const { fetchPageContent } = await import('@/lib/competitors/crawl')
+    const homePage = await fetchPageContent(fallbackUrl)
+    if (!homePage) {
+      return NextResponse.json({ error: `Could not access ${competitor.domain} — check the domain is correct` }, { status: 404 })
+    }
+    // Use just the homepage
+    return NextResponse.json({ pages_crawled: 1, likely_cited: 0 })
   }
 
   // Fetch page content (rate-limited: sequential with small delay)

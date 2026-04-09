@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       const competitorDomains = (await admin.from('competitors').select('domain').eq('client_id', client_id)).data || []
       const compDomains = competitorDomains.map((c) => c.domain).filter(Boolean) as string[]
 
-      const discoveredKws = await discoverKeywords(client.domain, client.industry)
+      const discoveredKws = await discoverKeywords(client.domain, client.industry, client.name)
 
       if (discoveredKws.length > 0) {
         const keywordRows = []
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
       .select('id, text')
       .eq('client_id', client_id)
       .eq('is_active', true)
-      .limit(5) // scan first 5 to keep it fast
+      .limit(3) // scan first 3 to keep under 60s timeout
 
     if (prompts && prompts.length > 0) {
       const allResults: any[] = []
