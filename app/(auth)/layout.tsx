@@ -1,10 +1,20 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+
 export const dynamic = 'force-dynamic'
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    redirect('/overview')
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md px-6">
