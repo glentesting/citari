@@ -1,5 +1,5 @@
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -27,21 +27,16 @@ const plans = [
 ]
 
 export default async function Home() {
-  // Check auth — redirect to dashboard if logged in
-  let isAuthenticated = false
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase.auth.getUser()
-    if (!error && data?.user) isAuthenticated = true
-  } catch {
-    // Not configured or error — show landing page
-  }
+  // Simple cookie check — no Supabase import needed
+  const cookieStore = cookies()
+  const hasAuth = cookieStore.getAll().some(
+    (c) => c.name.startsWith('sb-') && c.name.includes('auth-token')
+  )
 
-  if (isAuthenticated) {
+  if (hasAuth) {
     redirect('/overview')
   }
 
-  // Render landing page inline for unauthenticated users
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-gray-100">
