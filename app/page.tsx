@@ -4,16 +4,21 @@ import { createClient } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
+  let isAuthenticated = false
+
   try {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      redirect('/overview')
+    const { data, error } = await supabase.auth.getUser()
+    if (!error && data?.user) {
+      isAuthenticated = true
     }
   } catch {
-    // Not authenticated or Supabase not configured — show landing page
+    // Supabase not configured or error — treat as unauthenticated
   }
 
-  // Redirect to marketing home
+  if (isAuthenticated) {
+    redirect('/overview')
+  }
+
   redirect('/home')
 }
