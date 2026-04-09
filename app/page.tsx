@@ -27,8 +27,8 @@ const features = [
     ),
   },
   {
-    title: 'GEO Content Generator',
-    desc: 'Claude writes AI-optimized articles, FAQs, and comparisons that get cited. Schedule and publish to WordPress, Webflow, HubSpot, Ghost, and Shopify.',
+    title: 'AI Content Generator',
+    desc: 'Claude writes content optimized for AI citation — FAQs, comparisons, and landing pages that ChatGPT, Claude, and Gemini actually recommend.',
     tag: 'AI-Powered',
     color: 'bg-[#5DCAA5]/10 text-[#5DCAA5]',
     iconBg: 'bg-[#5DCAA5]/10',

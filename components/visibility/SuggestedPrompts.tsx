@@ -49,8 +49,8 @@ export default function SuggestedPrompts({ onAdded }: SuggestedPromptsProps) {
       } else {
         setSuggestions(data.suggestions || [])
       }
-    } catch {
-      setError('Network error')
+    } catch (err: any) {
+      setError(err?.message || 'Request failed — check your API keys in Vercel environment variables')
     } finally {
       setLoading(false)
     }

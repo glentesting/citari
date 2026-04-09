@@ -32,8 +32,8 @@ export default function NarrativeGenerator({ onGenerated }: NarrativeGeneratorPr
         setNarrative(data.narrative)
         onGenerated?.(data.narrative)
       }
-    } catch {
-      setError('Network error')
+    } catch (err: any) {
+      setError(err?.message || 'Request failed — check API keys in Vercel')
     } finally {
       setLoading(false)
     }

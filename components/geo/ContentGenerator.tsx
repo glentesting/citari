@@ -79,7 +79,7 @@ export default function ContentGenerator({ onGenerated, prefillPrompt = '' }: Co
       {/* Left: Generator Form */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Generate GEO Content</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Generate AI Content</h3>
           <p className="text-xs text-gray-500">
             Create content optimized for AI citation across ChatGPT, Claude, and Gemini.
           </p>

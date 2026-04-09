@@ -3,7 +3,7 @@ import Link from 'next/link'
 const features = [
   { title: 'AI Visibility Monitoring', desc: 'Track how ChatGPT, Claude, and Gemini mention your brand across hundreds of prompts.' },
   { title: 'Competitor Intelligence', desc: 'See exactly who AI models recommend instead of you — and why.' },
-  { title: 'GEO Content Generator', desc: 'Claude writes AI-optimized content that gets cited. FAQ, comparison, and landing pages.' },
+  { title: 'AI Content Generator', desc: 'Claude writes AI-optimized content that gets cited. FAQ, comparison, and landing pages.' },
   { title: 'Content Scheduler', desc: 'Schedule and publish to WordPress, Webflow, HubSpot, Ghost, and Shopify.' },
   { title: 'Schema Markup Generator', desc: 'Generate valid JSON-LD that AI models love to cite. FAQ, Organization, LocalBusiness.' },
   { title: 'Smart Reports', desc: 'AI-written executive narratives and white-label client portals.' },

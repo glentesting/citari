@@ -6,12 +6,12 @@ import { useClient } from '@/hooks/useClient'
 import PageHeader from '@/components/layout/PageHeader'
 
 const schemaTypes = [
-  { value: 'faq', label: 'FAQ', desc: 'Q&A pairs — #1 most cited by AI models', icon: '?' },
-  { value: 'organization', label: 'Organization', desc: 'Business identity, logo, contacts', icon: '🏢' },
-  { value: 'localbusiness', label: 'Local Business', desc: 'Address, hours, geo coordinates', icon: '📍' },
-  { value: 'article', label: 'Article', desc: 'Blog posts and content pages', icon: '📄' },
-  { value: 'review', label: 'Review', desc: 'Aggregate ratings and reviews', icon: '⭐' },
-  { value: 'breadcrumb', label: 'Breadcrumb', desc: 'Page navigation hierarchy', icon: '🔗' },
+  { value: 'faq', label: 'FAQ', desc: 'A list of questions and answers — the most cited schema type by AI models', icon: '?' },
+  { value: 'organization', label: 'Organization', desc: 'Your business name, logo, contact info — helps AI identify your brand', icon: '🏢' },
+  { value: 'localbusiness', label: 'Local Business', desc: 'Your address, hours, location — critical for local search queries', icon: '📍' },
+  { value: 'article', label: 'Article', desc: 'For blog posts and content pages — helps AI extract and cite your articles', icon: '📄' },
+  { value: 'review', label: 'Review', desc: 'Aggregate star ratings and reviews — builds trust signals for AI', icon: '⭐' },
+  { value: 'breadcrumb', label: 'Breadcrumb', desc: 'Page navigation hierarchy — helps AI understand site structure', icon: '🔗' },
 ]
 
 interface SchemaItem {
@@ -139,7 +139,7 @@ export default function SchemaPage() {
 
   return (
     <div>
-      <PageHeader title="Schema Markup" subtitle={`Structured data for ${activeClient.name}`} />
+      <PageHeader title="Schema Markup" subtitle={`Structured data for ${activeClient.name} — invisible code that tells AI models what your business offers. AI cites businesses with proper schema 2.3x more often.`} />
 
       {/* Tabs */}
       <div className="mt-6 flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">

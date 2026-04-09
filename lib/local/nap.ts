@@ -29,7 +29,7 @@ export async function checkNAPConsistency(
     { name: 'Google Business', query: `"${clientNAP.name}" site:google.com/maps` },
     { name: 'Yelp', query: `"${clientNAP.name}" site:yelp.com` },
     { name: 'Facebook', query: `"${clientNAP.name}" site:facebook.com` },
-    { name: 'Yellow Pages', query: `"${clientNAP.name}" site:yellowpages.com` },
+    { name: 'Apple Maps', query: `"${clientNAP.name}" site:maps.apple.com` },
     { name: 'BBB', query: `"${clientNAP.name}" site:bbb.org` },
     { name: 'Bing Places', query: `"${clientNAP.name}" site:bing.com/maps` },
   ]

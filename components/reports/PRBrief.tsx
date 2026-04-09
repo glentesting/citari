@@ -24,7 +24,7 @@ export default function PRBrief() {
       const data = await res.json()
       if (!res.ok) setError(data.error)
       else setResult(data)
-    } catch { setError('Network error') }
+    } catch (err: any) { setError(err?.message || 'Request failed — check API keys') }
     setLoading(false)
   }
 

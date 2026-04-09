@@ -46,7 +46,7 @@ export default function GeoPage() {
     return (
       <div>
         <PageHeader
-          title="GEO Content"
+          title="AI Content"
           subtitle="Generate AI-optimized content for your clients"
         />
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center mt-6">
@@ -59,7 +59,7 @@ export default function GeoPage() {
   return (
     <div>
       <PageHeader
-        title="GEO Content"
+        title="AI Content"
         subtitle={`${content.length} pieces created${publishedCount > 0 ? ` · ${publishedCount} published` : ''}${citedCount > 0 ? ` · ${citedCount} cited by AI` : ''}`}
       />
 

@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     const res = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250514',
       max_tokens: 2048,
-      system: `Generate 10 important tracking prompts for this business. These are questions buyers ask AI models. Return ONLY valid JSON: {"prompts":[{"text":"...","category":"awareness|evaluation|purchase"}]}`,
+      system: `Generate 10 tracking prompts — these are questions that POTENTIAL CUSTOMERS would ask an AI model when looking for this type of business or service. Focus on what real buyers search for, not industry directories or internal tools. Include location-aware queries if relevant. Return ONLY valid JSON: {"prompts":[{"text":"...","category":"awareness|evaluation|purchase"}]}`,
       messages: [{ role: 'user', content: `Company: ${client.name}\nIndustry: ${client.industry || 'N/A'}\nCompetitors: ${competitorNames.join(', ') || 'Unknown'}` }],
     })
 
@@ -177,5 +177,5 @@ export async function POST(request: Request) {
     steps.push(`Initial scan failed: ${e.message}`)
   }
 
-  return NextResponse.json({ steps })
+  return NextResponse.json({ steps, success: steps.length > 0 })
 }

@@ -14,7 +14,37 @@ export async function crawlCompetitorSitemap(domain: string): Promise<string[]> 
   const homepageUrls = await scrapeHomepageLinks(domain)
   if (homepageUrls.length > 0) return homepageUrls
 
-  return []
+  // 3. Last resort: try common blog paths directly
+  const commonPaths = ['/blog', '/news', '/articles', '/resources', '/insights']
+  const foundUrls: string[] = []
+  for (const path of commonPaths) {
+    for (const prefix of [`https://${domain}`, `https://www.${domain}`]) {
+      try {
+        const res = await fetch(`${prefix}${path}`, {
+          headers: FETCH_HEADERS,
+          signal: AbortSignal.timeout(8000),
+          redirect: 'follow',
+        })
+        if (res.ok) {
+          foundUrls.push(res.url)
+          // Scrape links from this page too
+          const html = await res.text()
+          const hrefMatches = html.match(/href="([^"]+)"/g) || []
+          const finalDomain = new URL(res.url).hostname
+          for (const match of hrefMatches.slice(0, 30)) {
+            const href = match.slice(6, -1)
+            if (href.startsWith('/') && !href.startsWith('//')) {
+              foundUrls.push(`https://${finalDomain}${href}`)
+            }
+          }
+          if (foundUrls.length >= 5) break
+        }
+      } catch { continue }
+    }
+    if (foundUrls.length >= 5) break
+  }
+
+  return [...new Set(foundUrls)].slice(0, MAX_PAGES)
 }
 
 async function trySitemap(domain: string): Promise<string[]> {

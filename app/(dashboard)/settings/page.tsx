@@ -51,9 +51,25 @@ export default function SettingsPage() {
           {activeTab === 'integrations' && (
             <div className="space-y-4">
               <WordPressConnection />
-              <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
-                <p className="text-xs text-gray-400">More integrations coming: Webflow, HubSpot, Ghost, Shopify</p>
-              </div>
+              {[
+                { name: 'HubSpot', desc: 'Push blog posts to HubSpot CMS', color: 'bg-orange-100', textColor: 'text-orange-600' },
+                { name: 'Webflow', desc: 'Create CMS items in Webflow collections', color: 'bg-blue-100', textColor: 'text-blue-600' },
+                { name: 'Ghost', desc: 'Publish posts via Ghost Admin API', color: 'bg-purple-100', textColor: 'text-purple-600' },
+                { name: 'Shopify', desc: 'Create blog articles in your Shopify store', color: 'bg-green-100', textColor: 'text-green-600' },
+              ].map((cms) => (
+                <div key={cms.name} className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 ${cms.color} rounded-lg flex items-center justify-center`}>
+                      <span className={`text-xs font-bold ${cms.textColor}`}>{cms.name[0]}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">{cms.name}</h3>
+                      <p className="text-xs text-gray-500">{cms.desc}</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 text-xs font-medium text-gray-400 bg-gray-50 rounded-lg border border-gray-100">Coming soon</span>
+                </div>
+              ))}
             </div>
           )}
 
