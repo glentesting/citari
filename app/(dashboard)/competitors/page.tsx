@@ -27,7 +27,34 @@ export default function CompetitorsPage() {
   const [comparisons, setComparisons] = useState<PromptComparison[]>([])
   const [insight, setInsight] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [discovering, setDiscovering] = useState(false)
   const supabase = createClient()
+
+  async function handleDiscover() {
+    if (!activeClient) return
+    setDiscovering(true)
+    try {
+      const res = await fetch('/api/competitors/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: activeClient.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.competitors) {
+          for (const comp of data.competitors) {
+            await supabase.from('competitors').insert({
+              client_id: activeClient.id,
+              name: comp.name,
+              domain: comp.domain || null,
+            })
+          }
+          fetchData()
+        }
+      }
+    } catch { /* */ }
+    setDiscovering(false)
+  }
 
   const fetchData = useCallback(async () => {
     if (!activeClient) {
@@ -222,6 +249,16 @@ export default function CompetitorsPage() {
 
       <div className="mt-6 space-y-6">
         <AddCompetitorForm onAdded={fetchData} />
+
+        {competitors.length === 0 && !loading && (
+          <div className="bg-brand-bg border border-brand-border rounded-xl p-5 text-center">
+            <p className="text-sm text-brand font-medium mb-3">Let AI discover your competitors automatically</p>
+            <button onClick={handleDiscover} disabled={discovering}
+              className="px-4 py-2 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand-dark disabled:opacity-50">
+              {discovering ? 'Discovering...' : 'Discover Competitors'}
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">

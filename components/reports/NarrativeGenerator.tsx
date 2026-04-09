@@ -25,7 +25,9 @@ export default function NarrativeGenerator({ onGenerated }: NarrativeGeneratorPr
         body: JSON.stringify({ client_id: activeClient.id }),
       })
 
-      const data = await res.json()
+      const text = await res.text()
+      if (!text) { setError('Server timed out — try again'); setLoading(false); return }
+      const data = JSON.parse(text)
       if (!res.ok) {
         setError(data.error || 'Failed to generate narrative')
       } else {

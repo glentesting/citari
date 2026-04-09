@@ -65,8 +65,9 @@ export default function NAPAudit() {
         <div>
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <span className="w-[2.5px] h-4 bg-brand rounded-full" />
-            NAP Consistency
+            Directory Listings
           </h3>
+          <p className="text-[10px] text-gray-400 mt-0.5">NAP = Name, Address, Phone — AI models pull your business info from these directories</p>
           {score !== null && (
             <p className="text-xs text-gray-500 mt-0.5">
               Score: <span className={`font-semibold ${score >= 80 ? 'text-green-600' : score >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{score}%</span> — {consistent}/{listings.length} directories consistent

@@ -177,5 +177,10 @@ export async function POST(request: Request) {
     steps.push(`Initial scan failed: ${e.message}`)
   }
 
-  return NextResponse.json({ steps, success: steps.length > 0 })
+  return NextResponse.json({
+    steps,
+    success: steps.length > 0,
+    competitors_found: competitorNames.length,
+    prompts_created: promptIds.length,
+  })
 }

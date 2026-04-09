@@ -84,11 +84,11 @@ Return ONLY valid JSON in this exact format:
 Industry: ${client.industry || 'Not specified'}
 Competitors: ${competitorNames.length > 0 ? competitorNames.join(', ') : 'None specified'}
 
-Generate 40 tracking prompts for this company.`
+Generate 15 tracking prompts for this company.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
-    max_tokens: 4096,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1500,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   })

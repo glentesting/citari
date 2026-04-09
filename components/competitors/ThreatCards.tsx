@@ -29,7 +29,8 @@ const threatConfig = {
 export default function ThreatCards({ competitors, onDeleted }: ThreatCardsProps) {
   const supabase = createClient()
 
-  async function deleteCompetitor(id: string) {
+  async function deleteCompetitor(id: string, name: string) {
+    if (!window.confirm(`Delete ${name} and all their data? This cannot be undone.`)) return
     await supabase.from('competitors').delete().eq('id', id)
     onDeleted()
   }
@@ -61,7 +62,7 @@ export default function ThreatCards({ competitors, onDeleted }: ThreatCardsProps
           >
             {/* Delete button */}
             <button
-              onClick={() => deleteCompetitor(comp.id)}
+              onClick={() => deleteCompetitor(comp.id, comp.name)}
               className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
               title="Remove competitor"
             >

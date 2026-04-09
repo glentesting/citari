@@ -61,12 +61,16 @@ export async function POST(request: Request) {
   const prevStartDate = new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime()))
 
   // Fetch current period scan results
-  const { data: currentScans } = await adminSupabase
+  const { data: currentScans, count: scanCount } = await adminSupabase
     .from('scan_results')
-    .select('model, mentioned, mention_position, competitor_mentions, prompt_id')
+    .select('model, mentioned, mention_position, competitor_mentions, prompt_id', { count: 'exact' })
     .eq('client_id', client_id)
     .gte('scanned_at', startDate.toISOString())
     .lte('scanned_at', endDate.toISOString())
+
+  if (!currentScans || currentScans.length === 0) {
+    return NextResponse.json({ error: 'No scan data yet. Run a scan first from the AI Visibility page to generate a narrative.' }, { status: 400 })
+  }
 
   // Fetch previous period for comparison
   const { data: prevScans } = await adminSupabase

@@ -60,8 +60,8 @@ export async function POST(request: Request) {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
-    max_tokens: 2048,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 800,
     system: `Generate valid JSON-LD schema markup for ${typeDescriptions[schema_type] || schema_type}.
 The schema must be:
 1. Valid according to schema.org specification

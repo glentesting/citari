@@ -40,6 +40,9 @@ export async function POST(request: Request) {
     .gte('scanned_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
 
   const results = scans || []
+  if (results.length === 0) {
+    return NextResponse.json({ error: 'No scan data yet. Run a scan first from the AI Visibility page.' }, { status: 400 })
+  }
   const publicationCounts = new Map<string, number>()
   for (const r of results) {
     const sources = r.citation_sources || []
