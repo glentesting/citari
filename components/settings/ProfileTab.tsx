@@ -35,25 +35,39 @@ export default function ProfileTab() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+          setLoading(false)
+          return
+        }
+        const user = data.user
+        const meta = user.user_metadata || {}
 
-      setEmail(user.email || '')
-      setFirstName(user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '')
-      setLastName(user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '')
-      setCompany(user.user_metadata?.company || '')
-      setRole(user.user_metadata?.role || '')
-      setTimezone(user.user_metadata?.timezone || 'America/Chicago')
+        setEmail(user.email || '')
+        const fullName = meta.full_name || ''
+        setFirstName(meta.first_name || fullName.split(' ')[0] || '')
+        setLastName(meta.last_name || fullName.split(' ').slice(1).join(' ') || '')
+        setCompany(meta.company || '')
+        setRole(meta.role || '')
+        setTimezone(meta.timezone || 'America/Chicago')
 
-      // Fetch stats
-      const { data: settings } = await supabase.from('user_settings').select('workspace_id').eq('user_id', user.id).single()
-      if (settings?.workspace_id) {
-        const [c, p, r] = await Promise.all([
-          supabase.from('clients').select('id', { count: 'exact', head: true }).eq('workspace_id', settings.workspace_id),
-          supabase.from('prompts').select('id', { count: 'exact', head: true }),
-          supabase.from('reports').select('id', { count: 'exact', head: true }).eq('workspace_id', settings.workspace_id),
-        ])
-        setStats({ clients: c.count || 0, prompts: p.count || 0, reports: r.count || 0 })
+        // Fetch stats
+        try {
+          const { data: settings } = await supabase.from('user_settings').select('workspace_id').eq('user_id', user.id).single()
+          if (settings?.workspace_id) {
+            const [c, p, r] = await Promise.all([
+              supabase.from('clients').select('id', { count: 'exact', head: true }).eq('workspace_id', settings.workspace_id),
+              supabase.from('prompts').select('id', { count: 'exact', head: true }),
+              supabase.from('reports').select('id', { count: 'exact', head: true }).eq('workspace_id', settings.workspace_id),
+            ])
+            setStats({ clients: c.count || 0, prompts: p.count || 0, reports: r.count || 0 })
+          }
+        } catch {
+          // Stats fetch failed — leave defaults
+        }
+      } catch {
+        // Auth fetch failed — leave defaults
       }
       setLoading(false)
     }

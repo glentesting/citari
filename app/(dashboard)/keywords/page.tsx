@@ -193,8 +193,8 @@ export default function KeywordsPage() {
                   ) : <span className="text-gray-400">—</span>}
                 </div>
                 <div className="px-3 py-3 flex items-center justify-center">
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${aiVisibleColors[kw.ai_visible]}`}>
-                    {kw.ai_visible}
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${aiVisibleColors[kw.ai_visible || 'no']}`}>
+                    {kw.ai_visible || 'no'}
                   </span>
                 </div>
                 <div className="px-3 py-3 flex items-center justify-center">
@@ -202,12 +202,12 @@ export default function KeywordsPage() {
                     kw.opportunity === 'high' ? 'bg-green-50 text-green-700' :
                     kw.opportunity === 'medium' ? 'bg-amber-50 text-amber-700' :
                     'bg-gray-100 text-gray-600'
-                  }`}>{kw.opportunity}</span>
+                  }`}>{kw.opportunity || 'medium'}</span>
                 </div>
                 <div className="px-3 py-3 text-center">
                   <span className={`text-sm font-medium ${
                     kw.trend === 'up' ? 'text-green-600' : kw.trend === 'down' ? 'text-red-600' : 'text-gray-400'
-                  }`}>{trendIcons[kw.trend]}</span>
+                  }`}>{trendIcons[kw.trend || 'flat']}</span>
                 </div>
                 <div className="px-2 py-3 flex items-center justify-center">
                   <button onClick={() => deleteKeyword(kw.id)} className="text-gray-300 hover:text-red-500 transition-colors">
