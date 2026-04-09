@@ -39,10 +39,10 @@ export default function LoginPage() {
       <div className="flex items-center gap-2.5 mb-8">
         <div className="w-9 h-9 bg-brand rounded-lg flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="white" />
-            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.45" />
-            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.45" />
-            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="white" />
+            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.95" />
+            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="#5DCAA5" fillOpacity="0.75" />
+            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="#5DCAA5" fillOpacity="0.75" />
+            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.95" />
           </svg>
         </div>
         <span className="text-xl font-bold text-gray-900">Citari</span>

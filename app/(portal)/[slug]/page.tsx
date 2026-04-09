@@ -93,10 +93,10 @@ export default function PortalPage({ params }: { params: { slug: string } }) {
             ) : (
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                  <rect x="2" y="2" width="7" height="7" rx="1.5" fill="white" />
-                  <rect x="11" y="2" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.45" />
-                  <rect x="2" y="11" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.45" />
-                  <rect x="11" y="11" width="7" height="7" rx="1.5" fill="white" />
+                  <rect x="2" y="2" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.95" />
+                  <rect x="11" y="2" width="7" height="7" rx="1.5" fill="#5DCAA5" fillOpacity="0.75" />
+                  <rect x="2" y="11" width="7" height="7" rx="1.5" fill="#5DCAA5" fillOpacity="0.75" />
+                  <rect x="11" y="11" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.95" />
                 </svg>
               </div>
             )}
