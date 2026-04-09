@@ -30,6 +30,8 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
   const supabase = createClient()
   const [editingUrl, setEditingUrl] = useState<string | null>(null)
   const [urlValue, setUrlValue] = useState('')
+  const [schedulingId, setSchedulingId] = useState<string | null>(null)
+  const [scheduleDate, setScheduleDate] = useState('')
 
   async function handlePublish(id: string) {
     setEditingUrl(id)
@@ -51,6 +53,18 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
 
     setEditingUrl(null)
     setUrlValue('')
+    onUpdated()
+  }
+
+  async function handleSchedule(id: string) {
+    if (!scheduleDate) return
+    await fetch('/api/content/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content_id: id, scheduled_publish_at: new Date(scheduleDate).toISOString() }),
+    })
+    setSchedulingId(null)
+    setScheduleDate('')
     onUpdated()
   }
 
@@ -147,15 +161,26 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
               </div>
               <div className="px-4 py-3 flex items-center justify-center gap-2">
                 {item.status === 'draft' ? (
-                  <button
-                    onClick={() => handlePublish(item.id)}
-                    className="text-brand hover:text-brand-dark transition-colors"
-                    title="Publish"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                    </svg>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handlePublish(item.id)}
+                      className="text-brand hover:text-brand-dark transition-colors"
+                      title="Publish now"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => { setSchedulingId(item.id); setScheduleDate('') }}
+                      className="text-gray-400 hover:text-amber-500 transition-colors"
+                      title="Schedule publish"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                    </button>
+                  </>
                 ) : (
                   <button
                     onClick={() => unpublish(item.id)}
@@ -199,6 +224,33 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
                 </button>
                 <button
                   onClick={() => setEditingUrl(null)}
+                  className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Schedule inline editor */}
+            {schedulingId === item.id && (
+              <div className="px-4 pb-3 flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  autoFocus
+                />
+                <button
+                  onClick={() => handleSchedule(item.id)}
+                  disabled={!scheduleDate}
+                  className="px-3 py-1.5 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                >
+                  Schedule
+                </button>
+                <button
+                  onClick={() => setSchedulingId(null)}
                   className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
                 >
                   Cancel

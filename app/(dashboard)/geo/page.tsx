@@ -6,6 +6,7 @@ import { useClient } from '@/hooks/useClient'
 import PageHeader from '@/components/layout/PageHeader'
 import ContentGenerator from '@/components/geo/ContentGenerator'
 import ContentLibrary from '@/components/geo/ContentLibrary'
+import ContentScheduler from '@/components/geo/ContentScheduler'
 import type { GeoContent } from '@/types'
 
 export default function GeoPage() {
@@ -64,6 +65,8 @@ export default function GeoPage() {
 
       <div className="mt-6 space-y-8">
         <ContentGenerator onGenerated={fetchContent} />
+
+        <ContentScheduler />
 
         <div>
           <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
