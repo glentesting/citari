@@ -1,41 +1,40 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Check for Supabase auth cookie (sb-*-auth-token)
-  const hasAuthCookie = request.cookies.getAll().some(
-    (cookie) => cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
-  )
-
-  const isAuthPage =
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup')
-
-  // Portal pages are public (password-protected in-page)
   const pathname = request.nextUrl.pathname
-  const isPortalPage = /^\/[a-z0-9-]+$/.test(pathname) &&
-    !['overview', 'visibility', 'competitors', 'geo', 'keywords', 'reports', 'settings', 'login', 'signup'].includes(
-      pathname.slice(1)
-    )
 
-  // If not logged in and trying to access protected routes, redirect to login
-  if (!hasAuthCookie && !isAuthPage && !isPortalPage && !pathname.startsWith('/api')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  const isAuthPage = pathname === '/login' || pathname === '/signup'
+  const isApiRoute = pathname.startsWith('/api')
+  const isProtected =
+    pathname === '/' ||
+    pathname.startsWith('/overview') ||
+    pathname.startsWith('/visibility') ||
+    pathname.startsWith('/competitors') ||
+    pathname.startsWith('/geo') ||
+    pathname.startsWith('/keywords') ||
+    pathname.startsWith('/reports') ||
+    pathname.startsWith('/settings')
+
+  const cookies = request.cookies.getAll()
+  let hasAuth = false
+  for (let i = 0; i < cookies.length; i++) {
+    if (cookies[i].name.startsWith('sb-') && cookies[i].name.includes('auth-token')) {
+      hasAuth = true
+      break
+    }
   }
 
-  // If logged in and trying to access auth pages, redirect to overview
-  if (hasAuthCookie && isAuthPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/overview'
-    return NextResponse.redirect(url)
+  if (!hasAuth && isProtected && !isApiRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (hasAuth && isAuthPage) {
+    return NextResponse.redirect(new URL('/overview', request.url))
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
