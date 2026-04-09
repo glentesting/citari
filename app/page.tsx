@@ -1,8 +1,4 @@
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-
-export const dynamic = 'force-dynamic'
 
 const features = [
   { title: 'AI Visibility Monitoring', desc: 'Track how ChatGPT, Claude, and Gemini mention your brand across hundreds of prompts.' },
@@ -26,17 +22,7 @@ const plans = [
   { name: 'Agency', price: 199, desc: 'Unlimited clients & prompts', features: ['All Professional features', 'Consultant playbook', 'Cross-client benchmarks', 'Multilingual tracking', 'Priority support', 'Custom branding'], cta: 'Start Free Trial' },
 ]
 
-export default async function Home() {
-  // Simple cookie check — no Supabase import needed
-  const cookieStore = cookies()
-  const hasAuth = cookieStore.getAll().some(
-    (c) => c.name.startsWith('sb-') && c.name.includes('auth-token')
-  )
-
-  if (hasAuth) {
-    redirect('/overview')
-  }
-
+export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-gray-100">
