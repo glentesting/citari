@@ -103,7 +103,7 @@ export default function Home() {
             <span className="text-xl font-bold text-white">Citari</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Log in</Link>
+            <Link href="/login" className="hidden sm:inline text-sm font-medium text-gray-400 hover:text-white transition-colors">Log in</Link>
             <Link href="/signup" className="px-4 py-2 text-sm font-semibold text-white bg-brand rounded-lg hover:bg-brand-dark transition-colors">Start Free Trial</Link>
           </div>
         </div>
@@ -116,7 +116,7 @@ export default function Home() {
             <span className="w-1.5 h-1.5 bg-brand rounded-full animate-pulse" />
             AI Visibility Intelligence
           </span>
-          <h1 className="text-5xl md:text-6xl font-bold text-white leading-[1.1] tracking-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.1] tracking-tight">
             Most tools give you a dashboard.<br />
             <span className="text-brand">Citari gives you a strategist.</span>
           </h1>
@@ -124,7 +124,7 @@ export default function Home() {
             Track your brand across every AI model. See what competitors are doing.
             Get the exact content to close the gap — and publish it automatically.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup" className="px-7 py-3.5 text-base font-semibold text-white bg-brand rounded-xl hover:bg-brand-dark transition-colors shadow-lg shadow-brand/25">
               Start your 14-day free trial
             </Link>
@@ -133,7 +133,7 @@ export default function Home() {
         </div>
 
         {/* Browser Mockup */}
-        <div className="max-w-4xl mx-auto mt-16">
+        <div className="hidden sm:block max-w-4xl mx-auto mt-16">
           <div className="bg-[#1a1030] rounded-xl border border-white/10 shadow-2xl shadow-brand/10 overflow-hidden">
             {/* Browser chrome */}
             <div className="flex items-center gap-2 px-4 py-3 bg-[#120d20] border-b border-white/5">
@@ -217,9 +217,9 @@ export default function Home() {
       {/* Problem */}
       <section className="py-20 px-6 bg-[#F9FAFB]">
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">AI is the new search.<br />Is your brand showing up?</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4">AI is the new search.<br />Is your brand showing up?</h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-12">When someone asks an AI model for the best solution in your category, your competitors might be the answer — not you.</p>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { stat: '67%', label: 'of buying decisions now start with an AI model query' },
               { stat: '3x', label: 'more likely to be cited with proper schema markup deployed' },
@@ -238,10 +238,10 @@ export default function Home() {
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-4xl font-bold text-gray-900">Not a dashboard. A strategist.</h2>
+            <h2 className="text-2xl sm:text-4xl font-bold text-gray-900">Not a dashboard. A strategist.</h2>
             <p className="text-lg text-gray-500 mt-3">Every feature is about prescribing action, not just measuring metrics.</p>
           </div>
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {features.map((f) => (
               <div key={f.title} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:shadow-brand/5 transition-shadow">
                 <div className="flex items-start gap-4">
@@ -279,12 +279,12 @@ export default function Home() {
       <section className="py-20 px-6" id="pricing">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900">Simple, transparent pricing</h2>
+            <h2 className="text-2xl sm:text-4xl font-bold text-gray-900">Simple, transparent pricing</h2>
             <p className="text-gray-500 mt-3">14-day free trial on all plans. No credit card required.</p>
           </div>
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
             {plans.map((plan: any) => (
-              <div key={plan.name} className={`bg-white rounded-2xl p-7 ${plan.popular ? 'border-2 border-brand ring-4 ring-brand/10 relative' : 'border border-gray-200'}`}>
+              <div key={plan.name} className={`bg-white rounded-2xl p-7 flex flex-col ${plan.popular ? 'border-2 border-brand ring-4 ring-brand/10 relative' : 'border border-gray-200'}`}>
                 {plan.popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-bold text-white bg-brand rounded-full uppercase tracking-wider">Most Popular</span>
                 )}
@@ -294,7 +294,7 @@ export default function Home() {
                   <span className="text-gray-400">/mo</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">{plan.desc}</p>
-                <ul className="mt-6 space-y-3">
+                <ul className="mt-6 space-y-3 flex-1">
                   {plan.features.map((f: string) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
                       <svg className="w-4 h-4 text-[#5DCAA5] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
@@ -314,7 +314,7 @@ export default function Home() {
       {/* CTA */}
       <section className="py-20 px-6 bg-brand">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">Start tracking your AI visibility today</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4">Start tracking your AI visibility today</h2>
           <p className="text-white/70 text-lg mb-8">14-day free trial. No credit card. Cancel anytime.</p>
           <Link href="/signup" className="inline-block px-8 py-4 text-brand font-bold bg-white rounded-xl hover:bg-gray-100 transition-colors shadow-lg text-base">
             Get Started Free
@@ -324,7 +324,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="py-10 px-6 bg-[#0F0A1A]">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
@@ -337,10 +337,11 @@ export default function Home() {
             <span className="text-sm font-bold text-white">Citari</span>
           </div>
           <div className="flex items-center gap-6">
+            <Link href="/privacy" className="text-xs text-gray-500 hover:text-gray-300">Privacy</Link>
+            <Link href="/terms" className="text-xs text-gray-500 hover:text-gray-300">Terms</Link>
             <Link href="/login" className="text-xs text-gray-500 hover:text-gray-300">Log in</Link>
-            <Link href="/signup" className="text-xs text-gray-500 hover:text-gray-300">Sign up</Link>
           </div>
-          <p className="text-xs text-gray-600">&copy; 2025 OrangeCore Group · citari.app</p>
+          <p className="text-xs text-gray-600">&copy; 2026 OrangeCore Group · citari.app</p>
         </div>
       </footer>
     </div>
