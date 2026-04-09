@@ -30,7 +30,6 @@ export function ClientProvider({
   const [clients, setClients] = useState<Client[]>([])
   const [activeClient, setActiveClientState] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   const refreshClients = useCallback(async () => {
     if (!workspaceId) {
@@ -38,6 +37,7 @@ export function ClientProvider({
       return
     }
 
+    const supabase = createClient()
     const { data } = await supabase
       .from('clients')
       .select('*')
@@ -52,14 +52,16 @@ export function ClientProvider({
       const stored = storedId ? data.find((c) => c.id === storedId) : null
       if (stored) {
         setActiveClientState(stored)
-      } else if (data.length > 0 && !activeClient) {
-        setActiveClientState(data[0])
-        localStorage.setItem('citari_active_client', data[0].id)
+      } else if (data.length > 0) {
+        setActiveClientState((prev) => prev || data[0])
+        if (!localStorage.getItem('citari_active_client')) {
+          localStorage.setItem('citari_active_client', data[0].id)
+        }
       }
     }
 
     setLoading(false)
-  }, [workspaceId, supabase, activeClient])
+  }, [workspaceId])
 
   useEffect(() => {
     refreshClients()
@@ -72,15 +74,20 @@ export function ClientProvider({
       localStorage.setItem('citari_active_client', client.id)
 
       // Persist to user_settings
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase
-          .from('user_settings')
-          .update({ active_client_id: client.id })
-          .eq('user_id', user.id)
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase
+            .from('user_settings')
+            .update({ active_client_id: client.id })
+            .eq('user_id', user.id)
+        }
+      } catch {
+        // Settings persist failed — non-critical
       }
     },
-    [supabase]
+    []
   )
 
   return (

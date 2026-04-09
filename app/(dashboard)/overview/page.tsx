@@ -217,7 +217,7 @@ export default function OverviewPage() {
       alertMessage,
     })
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => {
     fetchData()

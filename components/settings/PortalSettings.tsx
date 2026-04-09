@@ -63,7 +63,7 @@ export default function PortalSettings() {
       setAccentColor('#7C3AED')
     }
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => {
     fetchPortal()

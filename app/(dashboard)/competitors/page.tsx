@@ -194,7 +194,7 @@ export default function CompetitorsPage() {
     }
 
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => {
     fetchData()

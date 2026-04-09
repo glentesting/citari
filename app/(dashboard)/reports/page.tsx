@@ -30,7 +30,7 @@ export default function ReportsPage() {
 
     setReports(data || [])
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => {
     fetchReports()

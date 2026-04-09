@@ -30,7 +30,7 @@ export default function GeoPage() {
 
     setContent(data || [])
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => {
     fetchContent()

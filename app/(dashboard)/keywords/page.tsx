@@ -45,7 +45,7 @@ export default function KeywordsPage() {
       .order('your_rank', { ascending: true, nullsFirst: false })
     setKeywords(data || [])
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => { fetchKeywords() }, [fetchKeywords])
 

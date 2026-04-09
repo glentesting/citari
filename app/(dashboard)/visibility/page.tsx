@@ -46,7 +46,7 @@ export default function VisibilityPage() {
     setPrompts(promptsRes.data || [])
     setScanResults(scansRes.data || [])
     setLoading(false)
-  }, [activeClient, supabase])
+  }, [activeClient])
 
   useEffect(() => {
     fetchData()
