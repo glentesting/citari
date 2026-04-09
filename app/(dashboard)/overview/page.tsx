@@ -246,7 +246,7 @@ export default function OverviewPage() {
     )
   }
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div>
         <PageHeader title="Overview" subtitle={activeClient.name} />
@@ -257,7 +257,7 @@ export default function OverviewPage() {
     )
   }
 
-  const d = data!
+  const d = data
 
   const setupSteps = [
     { label: 'Discovering competitors...', key: 'competitors' },
