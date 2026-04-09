@@ -6,9 +6,11 @@ import PortalSettings from '@/components/settings/PortalSettings'
 import ProfileTab from '@/components/settings/ProfileTab'
 import WorkspaceModeTab from '@/components/settings/WorkspaceModeTab'
 import WordPressConnection from '@/components/settings/WordPressConnection'
+import BillingTab from '@/components/settings/BillingTab'
 
 const tabs = [
   { id: 'workspace', label: 'Workspace Mode' },
+  { id: 'billing', label: 'Billing' },
   { id: 'portal', label: 'Client Portal' },
   { id: 'integrations', label: 'Integrations' },
   { id: 'notifications', label: 'Notifications' },
@@ -43,6 +45,7 @@ export default function SettingsPage() {
 
         <div className="flex-1">
           {activeTab === 'workspace' && <WorkspaceModeTab />}
+          {activeTab === 'billing' && <BillingTab />}
           {activeTab === 'portal' && <PortalSettings />}
 
           {activeTab === 'integrations' && (

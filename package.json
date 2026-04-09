@@ -18,7 +18,8 @@
     "puppeteer": "^22.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "resend": "^6.10.0"
+    "resend": "^6.10.0",
+    "stripe": "^22.0.1"
   },
   "devDependencies": {
     "@fontsource/plus-jakarta-sans": "^5.2.8",
