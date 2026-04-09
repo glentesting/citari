@@ -8,20 +8,34 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  let user: any = null
+  let workspaceId: string | null = null
+
+  try {
+    const supabase = createClient()
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch (error: any) {
+    // Supabase env vars missing — redirect to login
+    console.error('Dashboard layout error:', error?.message)
+    redirect('/login')
+  }
 
   if (!user) {
     redirect('/login')
   }
 
-  let workspaceId: string | null = null
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('workspace_id')
-    .eq('user_id', user.id)
-    .single()
-  workspaceId = settings?.workspace_id ?? null
+  try {
+    const supabase = createClient()
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+      .single()
+    workspaceId = settings?.workspace_id ?? null
+  } catch {
+    // Settings fetch failed — continue with null workspace
+  }
 
   return (
     <ClientProviderWrapper workspaceId={workspaceId}>

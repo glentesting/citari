@@ -8,11 +8,22 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (user) {
-    redirect('/overview')
+    if (user) {
+      redirect('/overview')
+    }
+  } catch (error: any) {
+    // If Supabase env vars are missing, let the page render anyway
+    // so the user sees the login form (which will show its own error)
+    if (!error?.message?.includes('NEXT_REDIRECT')) {
+      console.error('Auth layout error:', error?.message)
+    } else {
+      // Re-throw redirect errors — Next.js uses thrown errors for redirects
+      throw error
+    }
   }
 
   return (
