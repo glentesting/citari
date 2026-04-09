@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { scanPrompt } from '@/lib/ai/scan'
-import { sendVisibilityDropAlert } from '@/lib/email/alerts'
+import { routeVisibilityAlert } from '@/lib/email/router'
 
 export const maxDuration = 300 // 5 minute timeout for Vercel
 
@@ -127,15 +127,32 @@ export async function GET(request: Request) {
         }
 
         // Check for visibility drop and send alert
-        if (settings?.alert_on_drop && userEmail && prevScore >= 0) {
+        if (settings?.alert_on_drop && prevScore >= 0) {
           const newMentions = allResults.filter((r) => r.mentioned).length
           const newScore = allResults.length > 0
             ? Math.round((newMentions / allResults.length) * 100)
             : 0
 
+          // Count gap prompts for context
+          const gapPrompts = new Set<string>()
+          for (const r of allResults) {
+            if (!r.mentioned && r.competitor_mentions && r.competitor_mentions.length > 0) {
+              gapPrompts.add(r.prompt_id)
+            }
+          }
+
           if (prevScore - newScore >= 5) {
             try {
-              await sendVisibilityDropAlert(userEmail, client.name, prevScore, newScore)
+              await routeVisibilityAlert({
+                supabase,
+                workspaceId: workspace.id,
+                ownerId: workspace.owner_id,
+                clientId: client.id,
+                clientName: client.name,
+                oldScore: prevScore,
+                newScore,
+                gapCount: gapPrompts.size,
+              })
             } catch (emailErr: any) {
               errors.push(`Email error for ${client.name}: ${emailErr.message}`)
             }
