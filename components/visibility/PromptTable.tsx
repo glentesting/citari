@@ -15,16 +15,30 @@ const categoryLabels: Record<string, { label: string; bg: string; text: string }
   purchase: { label: 'Purchase', bg: 'bg-green-50', text: 'text-green-700' },
 }
 
-function MentionDot({ mentioned }: { mentioned: boolean | null }) {
+function MentionDot({ mentioned, position }: { mentioned: boolean | null; position?: number | null }) {
   if (mentioned === null) {
     return <span className="w-3 h-3 rounded-full bg-gray-200" title="Not scanned" />
   }
-  return (
-    <span
-      className={`w-3 h-3 rounded-full ${mentioned ? 'bg-green-500' : 'bg-red-400'}`}
-      title={mentioned ? 'Mentioned' : 'Not mentioned'}
-    />
-  )
+  if (!mentioned) {
+    return <span className="w-3 h-3 rounded-full bg-red-400" title="Not mentioned" />
+  }
+  // Mentioned — show position badge if available
+  if (position && position <= 5) {
+    const colors = position === 1
+      ? 'bg-green-500 text-white'
+      : position <= 3
+      ? 'bg-green-400 text-white'
+      : 'bg-green-300 text-green-900'
+    return (
+      <span
+        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${colors}`}
+        title={`Mentioned #${position}`}
+      >
+        {position}
+      </span>
+    )
+  }
+  return <span className="w-3 h-3 rounded-full bg-green-500" title="Mentioned" />
 }
 
 export default function PromptTable({ prompts, scanResults, onUpdated }: PromptTableProps) {
@@ -117,9 +131,9 @@ export default function PromptTable({ prompts, scanResults, onUpdated }: PromptT
               </span>
             </div>
             <div className="px-4 py-3 flex items-center justify-center gap-4">
-              <MentionDot mentioned={gpt ? gpt.mentioned : null} />
-              <MentionDot mentioned={claude ? claude.mentioned : null} />
-              <MentionDot mentioned={gemini ? gemini.mentioned : null} />
+              <MentionDot mentioned={gpt ? gpt.mentioned : null} position={gpt?.mention_position} />
+              <MentionDot mentioned={claude ? claude.mentioned : null} position={claude?.mention_position} />
+              <MentionDot mentioned={gemini ? gemini.mentioned : null} position={gemini?.mention_position} />
             </div>
             <div className="px-4 py-3 flex items-center justify-center">
               <button

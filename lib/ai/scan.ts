@@ -1,11 +1,12 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { detectBrandMention, detectCompetitorMentions, detectSentiment } from './analyze'
+import { detectBrandMention, detectCompetitorMentions, detectSentiment, detectMentionPosition } from './analyze'
 
 export interface ScanResultRow {
   model: 'chatgpt' | 'claude' | 'gemini'
   mentioned: boolean
+  mention_position: number | null
   sentiment: 'positive' | 'neutral' | 'negative'
   response_excerpt: string
   competitor_mentions: string[]
@@ -69,6 +70,7 @@ export async function scanPrompt(
       return {
         model,
         mentioned: false,
+        mention_position: null,
         sentiment: 'neutral' as const,
         response_excerpt: `[Error: ${result.reason?.message || 'Unknown error'}]`,
         competitor_mentions: [],
@@ -81,6 +83,7 @@ export async function scanPrompt(
     return {
       model,
       mentioned: detectBrandMention(responseText, brandName),
+      mention_position: detectMentionPosition(responseText, brandName, competitorNames),
       sentiment: detectSentiment(responseText, brandName),
       response_excerpt: excerpt,
       competitor_mentions: detectCompetitorMentions(responseText, competitorNames),

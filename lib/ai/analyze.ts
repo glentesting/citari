@@ -17,6 +17,40 @@ export function detectCompetitorMentions(
   return competitorNames.filter((name) => lower.includes(name.toLowerCase()))
 }
 
+/**
+ * Detect the position of a brand mention among all brand/company mentions in the response.
+ * Returns 1 if mentioned first, 2 if second, etc. Returns null if not mentioned.
+ */
+export function detectMentionPosition(
+  responseText: string,
+  brandName: string,
+  competitorNames: string[]
+): number | null {
+  const brand = brandName.toLowerCase()
+  const lower = responseText.toLowerCase()
+
+  if (!lower.includes(brand)) return null
+
+  // Collect all known brand names (client + competitors)
+  const allBrands = [brandName, ...competitorNames]
+
+  // Find the first occurrence index of each brand
+  const mentions: { name: string; index: number }[] = []
+  for (const name of allBrands) {
+    const idx = lower.indexOf(name.toLowerCase())
+    if (idx !== -1) {
+      mentions.push({ name: name.toLowerCase(), index: idx })
+    }
+  }
+
+  // Sort by position in text
+  mentions.sort((a, b) => a.index - b.index)
+
+  // Find our brand's position (1-indexed)
+  const position = mentions.findIndex((m) => m.name === brand)
+  return position !== -1 ? position + 1 : null
+}
+
 export function detectSentiment(
   responseText: string,
   brandName: string

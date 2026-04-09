@@ -77,6 +77,7 @@ create table scan_results (
     client_id uuid references clients(id) on delete cascade,
     model text not null check (model in ('chatgpt', 'claude', 'gemini')),
     mentioned boolean default false,
+    mention_position integer,
     sentiment text check (sentiment in ('positive', 'neutral', 'negative')) default 'neutral',
     response_excerpt text,                       -- first 500 chars of AI response
     competitor_mentions text[],               -- array of competitor names found in response
@@ -197,3 +198,71 @@ create table user_settings (
 alter table user_settings enable row level security;
 create policy "Users manage their own settings"
     on user_settings for all using (auth.uid() = user_id);
+
+-- === COMPETITOR CONTENT (Phase 2) ===
+create table if not exists competitor_content (
+    id uuid primary key default gen_random_uuid(),
+    competitor_id uuid references competitors(id) on delete cascade,
+    url text not null,
+    title text,
+    excerpt text,
+    likely_cited boolean default false,
+    citation_prompt_ids text[],
+    crawled_at timestamptz default now()
+);
+
+alter table competitor_content enable row level security;
+create policy "Access competitor_content via client"
+    on competitor_content for all using (
+        competitor_id in (
+            select comp.id from competitors comp
+            join clients c on comp.client_id = c.id
+            join workspaces w on c.workspace_id = w.id
+            where w.owner_id = auth.uid()
+        )
+    );
+
+-- === COMPETITOR ADS (Phase 2) ===
+create table if not exists competitor_ads (
+    id uuid primary key default gen_random_uuid(),
+    competitor_id uuid references competitors(id) on delete cascade,
+    platform text check (platform in ('google', 'meta')),
+    ad_text text,
+    ad_url text,
+    first_seen date,
+    last_seen date,
+    is_active boolean default true,
+    fetched_at timestamptz default now()
+);
+
+alter table competitor_ads enable row level security;
+create policy "Access competitor_ads via client"
+    on competitor_ads for all using (
+        competitor_id in (
+            select comp.id from competitors comp
+            join clients c on comp.client_id = c.id
+            join workspaces w on c.workspace_id = w.id
+            where w.owner_id = auth.uid()
+        )
+    );
+
+-- === CLIENT PORTAL ACCESS (Phase 2) ===
+create table if not exists client_portal_access (
+    id uuid primary key default gen_random_uuid(),
+    client_id uuid references clients(id) on delete cascade,
+    workspace_id uuid references workspaces(id) on delete cascade,
+    portal_slug text unique not null,
+    client_email text,
+    portal_password_hash text,
+    brand_name text,
+    brand_logo_url text,
+    accent_color text default '#7C3AED',
+    is_active boolean default true,
+    created_at timestamptz default now()
+);
+
+alter table client_portal_access enable row level security;
+create policy "Workspace owners manage portal access"
+    on client_portal_access for all using (
+        workspace_id in (select id from workspaces where owner_id = auth.uid())
+    );

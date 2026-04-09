@@ -31,6 +31,7 @@ export interface ScanResult {
   client_id: string
   model: 'chatgpt' | 'claude' | 'gemini'
   mentioned: boolean
+  mention_position: number | null
   sentiment: 'positive' | 'neutral' | 'negative'
   response_excerpt: string | null
   competitor_mentions: string[]

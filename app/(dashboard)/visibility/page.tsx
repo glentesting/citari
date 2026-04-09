@@ -6,6 +6,7 @@ import { useClient } from '@/hooks/useClient'
 import PageHeader from '@/components/layout/PageHeader'
 import PlatformCards from '@/components/visibility/PlatformCards'
 import AddPromptForm from '@/components/visibility/AddPromptForm'
+import SuggestedPrompts from '@/components/visibility/SuggestedPrompts'
 import PromptTable from '@/components/visibility/PromptTable'
 import type { Prompt, ScanResult } from '@/types'
 
@@ -167,6 +168,9 @@ export default function VisibilityPage() {
 
         {/* Platform cards */}
         {scanResults.length > 0 && <PlatformCards platforms={platformData} />}
+
+        {/* AI-Suggested Prompts */}
+        <SuggestedPrompts onAdded={fetchData} />
 
         {/* Add prompt form */}
         <AddPromptForm onAdded={fetchData} />

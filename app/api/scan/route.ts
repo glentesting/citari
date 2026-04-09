@@ -94,6 +94,7 @@ export async function POST(request: Request) {
         client_id,
         model: result.model,
         mentioned: result.mentioned,
+        mention_position: result.mention_position,
         sentiment: result.sentiment,
         response_excerpt: result.response_excerpt,
         competitor_mentions: result.competitor_mentions,

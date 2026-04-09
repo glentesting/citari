@@ -9,9 +9,20 @@ import AlertBanner from '@/components/overview/AlertBanner'
 import PlatformBars from '@/components/overview/PlatformBars'
 import CompetitorGapList from '@/components/overview/CompetitorGapList'
 import GeoTaskList from '@/components/overview/GeoTaskList'
+import ShareOfVoice from '@/components/overview/ShareOfVoice'
+import Simulator from '@/components/overview/Simulator'
+
+interface ShareEntry {
+  name: string
+  share: number
+  isClient: boolean
+}
 
 interface OverviewData {
   visibilityScore: number
+  avgMentionPosition: number | null
+  shareOfVoice: ShareEntry[]
+  clientShare: number
   competitorGapCount: number
   geoContentCount: number
   reportsCount: number
@@ -41,7 +52,7 @@ export default function OverviewPage() {
     // Fetch scan results for last 30 days
     const { data: scanResults } = await supabase
       .from('scan_results')
-      .select('model, mentioned, competitor_mentions, prompt_id')
+      .select('model, mentioned, mention_position, competitor_mentions, prompt_id')
       .eq('client_id', activeClient.id)
       .gte('scanned_at', since)
 
@@ -53,6 +64,14 @@ export default function OverviewPage() {
     const visibilityScore = totalResults > 0
       ? Math.round((totalMentions / totalResults) * 100)
       : 0
+
+    // Average mention position
+    const positions = results
+      .filter((r: any) => r.mention_position != null)
+      .map((r: any) => r.mention_position as number)
+    const avgPosition = positions.length > 0
+      ? Math.round((positions.reduce((a, b) => a + b, 0) / positions.length) * 10) / 10
+      : null
 
     // Per-platform rates
     const models = ['chatgpt', 'claude', 'gemini'] as const
@@ -67,15 +86,44 @@ export default function OverviewPage() {
       gemini: '#4285F4',
     }
 
+    // Calculate velocity per model (this week vs last week)
+    const oneWeekAgo = new Date()
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    const oneWeekAgoStr = oneWeekAgo.toISOString()
+    const twoWeeksAgoStr = twoWeeksAgo.toISOString()
+
+    const { data: lastWeekScans } = await supabase
+      .from('scan_results')
+      .select('model, mentioned')
+      .eq('client_id', activeClient.id)
+      .gte('scanned_at', twoWeeksAgoStr)
+      .lt('scanned_at', oneWeekAgoStr)
+
+    const lastWeek = lastWeekScans || []
+
     const platformRates = models.map((model) => {
       const modelResults = results.filter((r) => r.model === model)
       const modelMentions = modelResults.filter((r) => r.mentioned).length
+      const currentRate = modelResults.length > 0
+        ? Math.round((modelMentions / modelResults.length) * 100)
+        : 0
+
+      const prevResults = lastWeek.filter((r) => r.model === model)
+      const prevMentions = prevResults.filter((r) => r.mentioned).length
+      const prevRate = prevResults.length > 0
+        ? Math.round((prevMentions / prevResults.length) * 100)
+        : 0
+
+      const delta = currentRate - prevRate
       return {
         name: modelLabels[model],
-        mentionRate: modelResults.length > 0
-          ? Math.round((modelMentions / modelResults.length) * 100)
-          : 0,
+        mentionRate: currentRate,
         color: modelColors[model],
+        velocity: prevResults.length > 0
+          ? { delta, direction: (delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat') as 'up' | 'down' | 'flat' }
+          : undefined,
       }
     })
 
@@ -107,6 +155,30 @@ export default function OverviewPage() {
       }))
       .slice(0, 10)
 
+    // Share of Voice
+    const mentionCounts = new Map<string, number>()
+    mentionCounts.set(activeClient.name, 0)
+    for (const r of results) {
+      if (r.mentioned) {
+        mentionCounts.set(activeClient.name, (mentionCounts.get(activeClient.name) || 0) + 1)
+      }
+      const compMentions = (r as any).competitor_mentions as string[] | null
+      if (compMentions) {
+        for (const comp of compMentions) {
+          mentionCounts.set(comp, (mentionCounts.get(comp) || 0) + 1)
+        }
+      }
+    }
+    const totalBrandMentions = Array.from(mentionCounts.values()).reduce((a, b) => a + b, 0)
+    const shareOfVoice: ShareEntry[] = Array.from(mentionCounts.entries())
+      .map(([name, mentions]) => ({
+        name,
+        share: totalBrandMentions > 0 ? Math.round((mentions / totalBrandMentions) * 100) : 0,
+        isClient: name === activeClient.name,
+      }))
+      .sort((a, b) => b.share - a.share)
+    const clientShare = shareOfVoice.find((e) => e.isClient)?.share || 0
+
     // GEO content count
     const { count: geoCount } = await supabase
       .from('geo_content')
@@ -134,6 +206,9 @@ export default function OverviewPage() {
 
     setData({
       visibilityScore,
+      avgMentionPosition: avgPosition,
+      shareOfVoice,
+      clientShare,
       competitorGapCount: gapMap.size,
       geoContentCount: geoCount || 0,
       reportsCount: reportsCount || 0,
@@ -188,18 +263,26 @@ export default function OverviewPage() {
               changeType: d.visibilityScore >= 50 ? 'positive' : 'negative',
             },
             {
+              label: 'Avg Mention Position',
+              value: d.avgMentionPosition !== null ? `#${d.avgMentionPosition}` : '—',
+              change: d.avgMentionPosition !== null
+                ? d.avgMentionPosition <= 2 ? 'Excellent placement' : d.avgMentionPosition <= 4 ? 'Good placement' : 'Room to improve'
+                : 'No data yet',
+              changeType: d.avgMentionPosition !== null
+                ? d.avgMentionPosition <= 3 ? 'positive' : 'neutral'
+                : 'neutral',
+            },
+            {
               label: 'Competitor Gaps',
               value: d.competitorGapCount,
               change: d.competitorGapCount > 0 ? 'Prompts where competitors appear but you don\'t' : 'No gaps',
               changeType: d.competitorGapCount > 0 ? 'negative' : 'positive',
             },
             {
-              label: 'GEO Content',
-              value: d.geoContentCount,
-            },
-            {
-              label: 'Reports This Month',
-              value: d.reportsCount,
+              label: 'Share of Voice',
+              value: `${d.clientShare}%`,
+              change: d.clientShare >= 30 ? 'Strong presence' : d.clientShare > 0 ? 'Room to grow' : 'No data',
+              changeType: d.clientShare >= 30 ? 'positive' : 'neutral',
             },
           ]}
         />
@@ -208,6 +291,14 @@ export default function OverviewPage() {
           <PlatformBars platforms={d.platformRates} />
           <CompetitorGapList gaps={d.gaps} />
         </div>
+
+        {d.shareOfVoice.length > 1 && (
+          <ShareOfVoice
+            entries={d.shareOfVoice}
+            clientShare={d.clientShare}
+            industry={activeClient.industry || undefined}
+          />
+        )}
 
         <GeoTaskList
           tasks={
@@ -225,6 +316,8 @@ export default function OverviewPage() {
               : []
           }
         />
+
+        <Simulator currentScore={d.visibilityScore} />
       </div>
     </div>
   )

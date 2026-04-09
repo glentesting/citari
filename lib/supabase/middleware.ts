@@ -37,8 +37,14 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/signup')
 
+  // Portal pages are public (password-protected in-page)
+  const isPortalPage = request.nextUrl.pathname.match(/^\/[a-z0-9-]+$/) &&
+    !['overview', 'visibility', 'competitors', 'geo', 'keywords', 'reports', 'settings', 'login', 'signup'].includes(
+      request.nextUrl.pathname.slice(1)
+    )
+
   // If not logged in and trying to access protected routes, redirect to login
-  if (!user && !isAuthPage && !request.nextUrl.pathname.startsWith('/api')) {
+  if (!user && !isAuthPage && !isPortalPage && !request.nextUrl.pathname.startsWith('/api')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

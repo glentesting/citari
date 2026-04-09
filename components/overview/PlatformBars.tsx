@@ -2,6 +2,10 @@ interface PlatformData {
   name: string
   mentionRate: number
   color: string
+  velocity?: {
+    delta: number
+    direction: 'up' | 'down' | 'flat'
+  }
 }
 
 interface PlatformBarsProps {
@@ -20,7 +24,21 @@ export default function PlatformBars({ platforms }: PlatformBarsProps) {
           <div key={platform.name}>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-sm font-medium text-gray-700">{platform.name}</span>
-              <span className="text-sm font-semibold text-gray-900">{platform.mentionRate}%</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-900">{platform.mentionRate}%</span>
+                {platform.velocity && platform.velocity.direction !== 'flat' && (
+                  <span
+                    className={`text-xs font-medium ${
+                      platform.velocity.direction === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {platform.velocity.direction === 'up' ? '↑' : '↓'} {Math.abs(platform.velocity.delta)}% this week
+                  </span>
+                )}
+                {platform.velocity && platform.velocity.direction === 'flat' && (
+                  <span className="text-xs text-gray-400">— flat</span>
+                )}
+              </div>
             </div>
             <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
               <div
