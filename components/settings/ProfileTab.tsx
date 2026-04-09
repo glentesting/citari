@@ -56,12 +56,20 @@ export default function ProfileTab() {
         try {
           const { data: settings } = await supabase.from('user_settings').select('workspace_id').eq('user_id', user.id).single()
           if (settings?.workspace_id) {
-            const [c, p, r] = await Promise.all([
-              supabase.from('clients').select('id', { count: 'exact', head: true }).eq('workspace_id', settings.workspace_id),
-              supabase.from('prompts').select('id', { count: 'exact', head: true }),
+            const { data: clientRows } = await supabase.from('clients').select('id').eq('workspace_id', settings.workspace_id)
+            const clientIds = (clientRows || []).map((c) => c.id)
+
+            const [r] = await Promise.all([
               supabase.from('reports').select('id', { count: 'exact', head: true }).eq('workspace_id', settings.workspace_id),
             ])
-            setStats({ clients: c.count || 0, prompts: p.count || 0, reports: r.count || 0 })
+
+            let promptCount = 0
+            if (clientIds.length > 0) {
+              const { count } = await supabase.from('prompts').select('id', { count: 'exact', head: true }).in('client_id', clientIds)
+              promptCount = count || 0
+            }
+
+            setStats({ clients: clientIds.length, prompts: promptCount, reports: r.count || 0 })
           }
         } catch {
           // Stats fetch failed — leave defaults
@@ -223,14 +231,25 @@ export default function ProfileTab() {
             </button>
           </form>
 
+          {/* Sign Out */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <button onClick={handleSignOut}
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              Sign out
+            </button>
+          </div>
+
           {/* Danger Zone */}
-          <div className="bg-white border-2 border-red-200 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-red-600 mb-2">Danger Zone</h3>
+          <div className="bg-white border border-red-200 rounded-xl p-5">
+            <h3 className="text-xs font-semibold text-red-500 mb-1">Danger Zone</h3>
             {!showDelete ? (
-              <button onClick={() => setShowDelete(true)}
-                className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
-                Delete Account
-              </button>
+              <div>
+                <button onClick={() => setShowDelete(true)}
+                  className="px-3 py-1.5 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                  Delete Account
+                </button>
+                <p className="text-[11px] text-gray-400 mt-2">This permanently deletes your account and all client data.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div>
@@ -248,22 +267,14 @@ export default function ProfileTab() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={handleDeleteAccount} disabled={!canDelete}
-                    className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
                     Permanently Delete Account
                   </button>
                   <button onClick={() => { setShowDelete(false); setDeleteEmail(''); setDeleteConfirm('') }}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+                    className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900">Cancel</button>
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Sign Out */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <button onClick={handleSignOut}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              Sign out
-            </button>
           </div>
         </div>
       </div>

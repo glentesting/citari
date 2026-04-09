@@ -229,6 +229,14 @@ export default function CompetitorsPage() {
           <>
             {insight && <InsightBanner message={insight} />}
 
+            {competitors.length > 0 && threats.length === 0 && comparisons.length === 0 && (
+              <div className="bg-brand-bg border border-brand-border rounded-xl p-5 text-center">
+                <p className="text-sm text-brand font-medium">
+                  Add prompts on the AI Visibility page and run a scan to see threat data here.
+                </p>
+              </div>
+            )}
+
             {/* Threat Cards */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">

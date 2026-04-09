@@ -1,13 +1,16 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
 import AddClientModal from '@/components/layout/AddClientModal'
 
 export default function ClientSwitcher() {
-  const { clients, activeClient, setActiveClient, loading } = useClient()
+  const { clients, activeClient, setActiveClient, refreshClients, loading } = useClient()
   const [open, setOpen] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -19,6 +22,16 @@ export default function ClientSwitcher() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    const supabase = createClient()
+    await supabase.from('clients').delete().eq('id', deleteTarget.id)
+    setDeleteTarget(null)
+    setDeleting(false)
+    await refreshClients()
+  }
 
   if (loading) {
     return (
@@ -50,40 +63,47 @@ export default function ClientSwitcher() {
           {clients.length === 0 ? (
             <p className="px-3 py-2 text-sm text-gray-400">No clients yet</p>
           ) : (
-            clients.map((client) => (
-              <button
-                key={client.id}
-                onClick={() => {
-                  setActiveClient(client)
-                  setOpen(false)
-                }}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2 ${
-                  activeClient?.id === client.id
-                    ? 'bg-brand-bg text-brand font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {client.avatar_url ? (
-                  <img src={client.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
-                ) : (
-                  <span className="w-5 h-5 rounded-full bg-brand-bg text-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                    {(client.name || '?')[0]}
-                  </span>
-                )}
-                <span className="truncate">{client.name}</span>
-                {client.domain && (
-                  <span className="text-xs text-gray-400 truncate">{client.domain}</span>
-                )}
-              </button>
-            ))
+            clients.map((client) => {
+              const isActive = activeClient?.id === client.id
+              return (
+                <div
+                  key={client.id}
+                  className={`flex items-center gap-1 px-1 ${isActive ? 'bg-brand-bg' : 'hover:bg-gray-50'}`}
+                >
+                  <button
+                    onClick={() => { setActiveClient(client); setOpen(false) }}
+                    className={`flex-1 text-left px-2 py-2 text-sm transition-colors flex items-center gap-2 ${
+                      isActive ? 'text-brand font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    {client.avatar_url ? (
+                      <img src={client.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                      <span className="w-5 h-5 rounded-full bg-brand-bg text-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                        {(client.name || '?')[0]}
+                      </span>
+                    )}
+                    <span className="truncate">{client.name}</span>
+                  </button>
+                  {!isActive && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: client.id, name: client.name }) }}
+                      className="p-1.5 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                      title="Delete client"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )
+            })
           )}
 
           <div className="border-t border-gray-100 mt-1 pt-1">
             <button
-              onClick={() => {
-                setOpen(false)
-                setShowAddModal(true)
-              }}
+              onClick={() => { setOpen(false); setShowAddModal(true) }}
               className="w-full text-left px-3 py-2 text-sm text-brand font-medium hover:bg-brand-bg transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -91,6 +111,33 @@ export default function ClientSwitcher() {
               </svg>
               Add new client
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Delete {deleteTarget.name}?</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              This will permanently delete <strong>{deleteTarget.name}</strong> and all their data — prompts, scan results, competitors, content, and reports. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}
