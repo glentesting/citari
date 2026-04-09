@@ -1,57 +1,192 @@
 const MAX_PAGES = 20
+const FETCH_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' }
 
 /**
- * Fetch and parse a competitor's sitemap.xml to extract content URLs.
+ * Try to find content URLs for a domain.
+ * Strategy: sitemap.xml first, then scrape homepage links as fallback.
  */
 export async function crawlCompetitorSitemap(domain: string): Promise<string[]> {
-  const sitemapUrls = [
+  // 1. Try sitemap
+  const sitemapUrls = await trySitemap(domain)
+  if (sitemapUrls.length > 0) return sitemapUrls
+
+  // 2. Fallback: scrape links from the homepage
+  const homepageUrls = await scrapeHomepageLinks(domain)
+  if (homepageUrls.length > 0) return homepageUrls
+
+  return []
+}
+
+async function trySitemap(domain: string): Promise<string[]> {
+  const candidates = [
     `https://${domain}/sitemap.xml`,
     `https://www.${domain}/sitemap.xml`,
     `https://${domain}/sitemap_index.xml`,
+    `https://${domain}/post-sitemap.xml`,
+    `https://${domain}/page-sitemap.xml`,
+    `https://www.${domain}/sitemap_index.xml`,
   ]
 
-  for (const url of sitemapUrls) {
+  for (const url of candidates) {
     try {
       const res = await fetch(url, {
-        headers: { 'User-Agent': 'Citari Bot/1.0 (competitive research)' },
+        headers: FETCH_HEADERS,
         signal: AbortSignal.timeout(10000),
+        redirect: 'follow',
       })
 
       if (!res.ok) continue
 
       const xml = await res.text()
 
-      // Extract URLs from sitemap
-      const urlMatches = xml.match(/<loc>(.*?)<\/loc>/g)
-      if (!urlMatches) continue
-
-      const urls = urlMatches
-        .map((match) => match.replace(/<\/?loc>/g, ''))
-        .filter((u) => {
-          const lower = u.toLowerCase()
-          // Prioritize blog/content pages
-          return (
-            lower.includes('/blog') ||
-            lower.includes('/article') ||
-            lower.includes('/post') ||
-            lower.includes('/resource') ||
-            lower.includes('/guide') ||
-            lower.includes('/learn') ||
-            lower.includes('/insights') ||
-            lower.includes('/news')
-          )
-        })
-        .slice(0, MAX_PAGES)
-
-      // If no content pages found, take the first MAX_PAGES URLs
-      if (urls.length === 0) {
-        return urlMatches
-          .map((match) => match.replace(/<\/?loc>/g, ''))
-          .filter((u) => !u.match(/\.(jpg|png|gif|css|js|xml|pdf)$/i))
-          .slice(0, MAX_PAGES)
+      // Check for sitemap index (links to other sitemaps)
+      if (xml.includes('<sitemapindex')) {
+        const sitemapLocs = xml.match(/<loc>(.*?)<\/loc>/g)
+        if (sitemapLocs) {
+          // Fetch the first child sitemap
+          for (const loc of sitemapLocs.slice(0, 3)) {
+            const childUrl = loc.replace(/<\/?loc>/g, '')
+            const childUrls = await fetchSitemapUrls(childUrl)
+            if (childUrls.length > 0) return childUrls
+          }
+        }
+        continue
       }
 
-      return urls
+      const urls = extractSitemapUrls(xml)
+      if (urls.length > 0) return urls
+    } catch {
+      continue
+    }
+  }
+
+  return []
+}
+
+async function fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
+  try {
+    const res = await fetch(sitemapUrl, {
+      headers: FETCH_HEADERS,
+      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+    })
+    if (!res.ok) return []
+    const xml = await res.text()
+    return extractSitemapUrls(xml)
+  } catch {
+    return []
+  }
+}
+
+function extractSitemapUrls(xml: string): string[] {
+  const urlMatches = xml.match(/<loc>(.*?)<\/loc>/g)
+  if (!urlMatches) return []
+
+  const allUrls = urlMatches
+    .map((match) => match.replace(/<\/?loc>/g, ''))
+    .filter((u) => !u.match(/\.(jpg|jpeg|png|gif|css|js|xml|pdf|svg|webp|mp4|zip)$/i))
+
+  // Prioritize content pages
+  const contentUrls = allUrls.filter((u) => {
+    const lower = u.toLowerCase()
+    return (
+      lower.includes('/blog') ||
+      lower.includes('/article') ||
+      lower.includes('/post') ||
+      lower.includes('/resource') ||
+      lower.includes('/guide') ||
+      lower.includes('/learn') ||
+      lower.includes('/insights') ||
+      lower.includes('/news') ||
+      lower.includes('/case-stud') ||
+      lower.includes('/whitepaper') ||
+      lower.includes('/help') ||
+      lower.includes('/docs')
+    )
+  })
+
+  // Use content URLs if found, otherwise take all non-asset URLs
+  return (contentUrls.length > 0 ? contentUrls : allUrls).slice(0, MAX_PAGES)
+}
+
+/**
+ * Fallback: fetch the homepage and extract internal links.
+ */
+async function scrapeHomepageLinks(domain: string): Promise<string[]> {
+  const homeUrls = [`https://${domain}`, `https://www.${domain}`]
+
+  for (const homeUrl of homeUrls) {
+    try {
+      const res = await fetch(homeUrl, {
+        headers: FETCH_HEADERS,
+        signal: AbortSignal.timeout(10000),
+        redirect: 'follow',
+      })
+
+      if (!res.ok) continue
+
+      const html = await res.text()
+      const finalDomain = new URL(res.url).hostname
+
+      // Extract all href values
+      const hrefMatches = html.match(/href="([^"]+)"/g) || []
+      const urls = new Set<string>()
+
+      for (const match of hrefMatches) {
+        const href = match.slice(6, -1) // strip href=" and "
+
+        let fullUrl: string
+        if (href.startsWith('http')) {
+          fullUrl = href
+        } else if (href.startsWith('/') && !href.startsWith('//')) {
+          fullUrl = `https://${finalDomain}${href}`
+        } else {
+          continue
+        }
+
+        // Only keep internal links
+        try {
+          const parsed = new URL(fullUrl)
+          if (!parsed.hostname.includes(domain.replace('www.', ''))) continue
+
+          // Skip non-content paths
+          const path = parsed.pathname.toLowerCase()
+          if (
+            path === '/' ||
+            path.includes('login') ||
+            path.includes('signup') ||
+            path.includes('cart') ||
+            path.includes('checkout') ||
+            path.includes('account') ||
+            path.includes('privacy') ||
+            path.includes('terms') ||
+            path.includes('cookie') ||
+            path.match(/\.(jpg|png|gif|css|js|pdf|svg)$/)
+          ) continue
+
+          urls.add(parsed.origin + parsed.pathname)
+        } catch {
+          continue
+        }
+      }
+
+      if (urls.size > 0) {
+        const urlArray = Array.from(urls)
+
+        // Prioritize content-looking paths
+        const content = urlArray.filter((u) => {
+          const lower = u.toLowerCase()
+          return (
+            lower.includes('/blog') || lower.includes('/article') ||
+            lower.includes('/post') || lower.includes('/resource') ||
+            lower.includes('/about') || lower.includes('/service') ||
+            lower.includes('/product') || lower.includes('/solution') ||
+            lower.includes('/case') || lower.includes('/news')
+          )
+        })
+
+        return (content.length > 0 ? content : urlArray).slice(0, MAX_PAGES)
+      }
     } catch {
       continue
     }
@@ -72,8 +207,9 @@ export interface PageContent {
 export async function fetchPageContent(url: string): Promise<PageContent | null> {
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Citari Bot/1.0 (competitive research)' },
+      headers: FETCH_HEADERS,
       signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
     })
 
     if (!res.ok) return null
