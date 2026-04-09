@@ -9,17 +9,33 @@ export default function ClientSwitcher() {
   const { clients, activeClient, setActiveClient, refreshClients, loading } = useClient()
   const [open, setOpen] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false)
+        setConfirmDeleteId(null)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  async function handleDelete(clientId: string) {
+    const supabase = createClient()
+    await supabase.from('clients').delete().eq('id', clientId)
+    setConfirmDeleteId(null)
+
+    // If we deleted the active client, clear it
+    if (activeClient?.id === clientId) {
+      // refreshClients will auto-select the next available client
+      localStorage.removeItem('citari_active_client')
+    }
+
+    await refreshClients()
+  }
 
   if (loading) {
     return (
@@ -32,7 +48,7 @@ export default function ClientSwitcher() {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => { setOpen(!open); setConfirmDeleteId(null) }}
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
       >
         <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -47,16 +63,42 @@ export default function ClientSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 max-h-80 overflow-y-auto">
           {clients.length === 0 ? (
             <p className="px-3 py-2 text-sm text-gray-400">No clients yet</p>
           ) : (
             clients.map((client) => {
               const isActive = activeClient?.id === client.id
+              const isConfirming = confirmDeleteId === client.id
+
+              if (isConfirming) {
+                return (
+                  <div key={client.id} className="px-3 py-2 bg-red-50 border-b border-red-100">
+                    <p className="text-xs font-medium text-red-700 mb-2">
+                      Delete {client.name} and all data?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDelete(client.id)}
+                        className="px-3 py-1 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700"
+                      >
+                        Yes, delete
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
               return (
                 <div
                   key={client.id}
-                  className={`flex items-center gap-1 px-1 ${isActive ? 'bg-brand-bg' : 'hover:bg-gray-50'}`}
+                  className={`flex items-center px-1 ${isActive ? 'bg-brand-bg' : 'hover:bg-gray-50'}`}
                 >
                   <button
                     onClick={() => { setActiveClient(client); setOpen(false) }}
@@ -72,25 +114,22 @@ export default function ClientSwitcher() {
                       </span>
                     )}
                     <span className="truncate">{client.name}</span>
+                    {isActive && (
+                      <span className="ml-auto text-[10px] text-brand-dark bg-brand-bg px-1.5 py-0.5 rounded-full">active</span>
+                    )}
                   </button>
-                  {!isActive && (
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        if (window.confirm(`Delete ${client.name} and all their data? This cannot be undone.`)) {
-                          const supabase = createClient()
-                          await supabase.from('clients').delete().eq('id', client.id)
-                          refreshClients()
-                        }
-                      }}
-                      className="p-1.5 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
-                      title="Delete client"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setConfirmDeleteId(client.id)
+                    }}
+                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                    title="Delete client"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
                 </div>
               )
             })
