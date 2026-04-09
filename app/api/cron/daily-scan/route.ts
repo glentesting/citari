@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { scanPrompt } from '@/lib/ai/scan'
 import { routeVisibilityAlert } from '@/lib/email/router'
+import { detectPredictiveThreats } from '@/lib/analytics/predictive'
+import { detectModelDrift } from '@/lib/analytics/drift'
 
 export const maxDuration = 300 // 5 minute timeout for Vercel
 
@@ -164,10 +166,41 @@ export async function GET(request: Request) {
     }
   }
 
+  // Run predictive threat detection and drift analysis per client
+  const predictiveAlerts: string[] = []
+  const driftAlerts: string[] = []
+
+  for (const workspace of workspaces) {
+    const { data: clients } = await supabase
+      .from('clients')
+      .select('id, name')
+      .eq('workspace_id', workspace.id)
+
+    for (const client of clients || []) {
+      try {
+        const threats = await detectPredictiveThreats(supabase, client.id)
+        for (const t of threats) {
+          if (t.urgency === 'high') {
+            predictiveAlerts.push(`[${client.name}] ${t.threat}`)
+          }
+        }
+
+        const driftEvents = await detectModelDrift(supabase, client.id)
+        for (const d of driftEvents) {
+          driftAlerts.push(`[${client.name}] ${d.description}`)
+        }
+      } catch {
+        // Non-critical — continue
+      }
+    }
+  }
+
   return NextResponse.json({
     message: 'Daily scan complete',
     prompts_scanned: totalScanned,
     results_stored: totalResults,
+    predictive_alerts: predictiveAlerts.length,
+    drift_events: driftAlerts.length,
     errors: errors.length > 0 ? errors : undefined,
   })
 }

@@ -12,6 +12,8 @@ import CompetitorGapList from '@/components/overview/CompetitorGapList'
 import GeoTaskList from '@/components/overview/GeoTaskList'
 import ShareOfVoice from '@/components/overview/ShareOfVoice'
 import Simulator from '@/components/overview/Simulator'
+import BenchmarkComparison from '@/components/overview/BenchmarkComparison'
+import PredictiveAlerts from '@/components/overview/PredictiveAlerts'
 
 interface ShareEntry {
   name: string
@@ -356,6 +358,8 @@ export default function OverviewPage() {
       <div className="mt-6 space-y-6">
         {d.alertMessage && <AlertBanner message={d.alertMessage} />}
 
+        <PredictiveAlerts />
+
         {/* Run Setup for empty clients */}
         {d.visibilityScore === 0 && !d.hasPrompts && (
           <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
@@ -420,6 +424,11 @@ export default function OverviewPage() {
             industry={activeClient.industry || undefined}
           />
         )}
+
+        <BenchmarkComparison
+          clientVisibility={d.visibilityScore}
+          clientAuthority={d.avgAuthorityScore}
+        />
 
         <GeoTaskList
           tasks={
