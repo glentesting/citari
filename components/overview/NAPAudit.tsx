@@ -94,6 +94,11 @@ export default function NAPAudit() {
         </div>
       ) : (
         <div className="divide-y divide-gray-100">
+          {listings.some((l) => !l.is_consistent) && (
+            <p className="px-5 py-2 text-[10px] text-gray-400 bg-gray-50 border-b border-gray-100">
+              Note: Mismatches may be from post content, not your actual business name. Click the link to verify manually.
+            </p>
+          )}
           {listings.map((l) => (
             <div key={l.id} className={`px-5 py-3 ${!l.is_consistent ? 'bg-red-50/50' : ''}`}>
               <div className="flex items-center justify-between">

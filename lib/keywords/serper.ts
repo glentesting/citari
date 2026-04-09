@@ -79,14 +79,14 @@ export async function searchKeyword(
 export function generateSeedKeywords(industry: string | null, clientName: string): string[] {
   const ind = (industry || clientName).toLowerCase().trim()
   return [
-    `best ${ind}`,
-    `${ind} services`,
-    `${ind} near me`,
-    `top ${ind} companies`,
-    `${ind} reviews`,
-    `${ind} pricing`,
-    `best ${ind} for small business`,
-    `${ind} vs`,
+    `best ${ind} near me`,
+    `${ind} for small business`,
+    `how to find a good ${ind}`,
+    `${ind} reviews and recommendations`,
+    `affordable ${ind} services`,
+    `top rated ${ind} in my area`,
+    `do I need a ${ind}`,
+    `${ind} consultation`,
   ]
 }
 

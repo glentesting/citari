@@ -41,7 +41,7 @@ export default function TermsPage() {
 
         <h2>6. Content and Data</h2>
         <p>You retain ownership of all data you input into Citari. We do not claim ownership of your client data, prompts, or generated content. You grant us a limited license to process your data solely for the purpose of providing the Service.</p>
-        <p>AI-generated content created through our GEO Content Generator is yours to use commercially. We make no warranties about the accuracy or quality of AI-generated content.</p>
+        <p>AI-generated content created through our AI Content Generator is yours to use commercially. We make no warranties about the accuracy or quality of AI-generated content.</p>
 
         <h2>7. Third-Party Integrations</h2>
         <p>The Service integrates with third-party APIs (OpenAI, Anthropic, Google, Stripe, Serper.dev, various CMS platforms). Your use of these services is subject to their respective terms. We are not responsible for third-party service outages or changes.</p>

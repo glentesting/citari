@@ -94,6 +94,12 @@ export default function BacklinkOpportunities() {
 
       {discoverMsg && <div className={`px-5 py-2 text-xs font-medium border-b ${discoverMsg.includes('fail') ? 'bg-red-50 text-red-700' : 'bg-brand-bg text-brand'}`}>{discoverMsg}</div>}
 
+      <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+        <p className="text-xs text-gray-500 leading-relaxed">
+          These websites link to your competitors but not to you. A link from a relevant site improves your authority and how often AI models cite your brand. Reach out to the site owner, offer a guest post, or ask for a mention. Track progress with the status dropdown.
+        </p>
+      </div>
+
       {types.length > 1 && (
         <div className="px-5 py-2 border-b border-gray-100 flex gap-2 flex-wrap">
           <button onClick={() => setFilterType('all')}

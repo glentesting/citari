@@ -82,14 +82,20 @@ export async function checkNAPConsistency(
       // Extract what we can from the search snippet
       const snippet = organic[0]?.snippet || ''
       const title = organic[0]?.title || ''
+      const fullText = `${title} ${snippet}`.toLowerCase()
 
       const issues: string[] = []
       const listedName = title.split(' - ')[0]?.split(' | ')[0]?.trim() || null
 
-      // Check name consistency
-      if (listedName && !listedName.toLowerCase().includes(clientNAP.name.toLowerCase()) &&
-          !clientNAP.name.toLowerCase().includes(listedName.toLowerCase())) {
-        issues.push(`Name mismatch: "${listedName}" vs "${clientNAP.name}"`)
+      // If the client name appears anywhere in the result, it's found — skip name mismatch
+      const nameFound = fullText.includes(clientNAP.name.toLowerCase())
+      if (!nameFound && listedName) {
+        // Only flag if it's clearly a different business, not a post/description
+        if (listedName.length < 100 &&
+            !listedName.toLowerCase().includes(clientNAP.name.toLowerCase()) &&
+            !clientNAP.name.toLowerCase().includes(listedName.toLowerCase())) {
+          issues.push(`Possible name mismatch — verify manually`)
+        }
       }
 
       // Check if phone appears

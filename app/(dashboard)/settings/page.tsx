@@ -6,6 +6,7 @@ import PortalSettings from '@/components/settings/PortalSettings'
 import ProfileTab from '@/components/settings/ProfileTab'
 import WorkspaceModeTab from '@/components/settings/WorkspaceModeTab'
 import WordPressConnection from '@/components/settings/WordPressConnection'
+import CMSConnectionCard from '@/components/settings/CMSConnectionCard'
 import BillingTab from '@/components/settings/BillingTab'
 
 const tabs = [
@@ -51,25 +52,54 @@ export default function SettingsPage() {
           {activeTab === 'integrations' && (
             <div className="space-y-4">
               <WordPressConnection />
-              {[
-                { name: 'HubSpot', desc: 'Push blog posts to HubSpot CMS', color: 'bg-orange-100', textColor: 'text-orange-600' },
-                { name: 'Webflow', desc: 'Create CMS items in Webflow collections', color: 'bg-blue-100', textColor: 'text-blue-600' },
-                { name: 'Ghost', desc: 'Publish posts via Ghost Admin API', color: 'bg-purple-100', textColor: 'text-purple-600' },
-                { name: 'Shopify', desc: 'Create blog articles in your Shopify store', color: 'bg-green-100', textColor: 'text-green-600' },
-              ].map((cms) => (
-                <div key={cms.name} className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 ${cms.color} rounded-lg flex items-center justify-center`}>
-                      <span className={`text-xs font-bold ${cms.textColor}`}>{cms.name[0]}</span>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900">{cms.name}</h3>
-                      <p className="text-xs text-gray-500">{cms.desc}</p>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 text-xs font-medium text-gray-400 bg-gray-50 rounded-lg border border-gray-100">Coming soon</span>
-                </div>
-              ))}
+              <CMSConnectionCard
+                platform="hubspot" name="HubSpot" desc="Push blog posts to HubSpot CMS"
+                color="bg-orange-100" textColor="text-orange-600"
+                connectEndpoint="/api/integrations/hubspot/connect"
+                fields={[
+                  { key: 'access_token', label: 'Private App Access Token', placeholder: 'pat-xxx-xxxxxxxx', type: 'password',
+                    help: 'In HubSpot: Settings → Integrations → Private Apps → Create → copy the access token' },
+                ]}
+              />
+              <CMSConnectionCard
+                platform="webflow" name="Webflow" desc="Create items in Webflow CMS collections"
+                color="bg-blue-100" textColor="text-blue-600"
+                connectEndpoint="/api/integrations/webflow/connect"
+                fields={[
+                  { key: 'access_token', label: 'API Token', placeholder: 'your-webflow-api-token', type: 'password',
+                    help: 'In Webflow: Account Settings → Integrations → API Access → Generate token' },
+                ]}
+              />
+              <CMSConnectionCard
+                platform="ghost" name="Ghost" desc="Publish posts via Ghost Admin API"
+                color="bg-purple-100" textColor="text-purple-600"
+                connectEndpoint="/api/integrations/ghost/connect"
+                fields={[
+                  { key: 'site_url', label: 'Ghost Site URL', placeholder: 'https://your-site.ghost.io' },
+                  { key: 'admin_api_key', label: 'Admin API Key', placeholder: 'xxxxxxxxxxxx:yyyyyyyyyyyy', type: 'password',
+                    help: 'In Ghost Admin: Settings → Integrations → Add custom integration → copy Admin API Key' },
+                ]}
+              />
+              <CMSConnectionCard
+                platform="shopify" name="Shopify" desc="Create blog articles in your Shopify store"
+                color="bg-green-100" textColor="text-green-600"
+                connectEndpoint="/api/integrations/shopify/connect"
+                fields={[
+                  { key: 'site_url', label: 'Store URL', placeholder: 'your-store.myshopify.com' },
+                  { key: 'access_token', label: 'Admin API Access Token', placeholder: 'shpat_xxxxx', type: 'password',
+                    help: 'In Shopify Admin: Settings → Apps → Develop apps → Create app → Admin API access token' },
+                ]}
+              />
+              <CMSConnectionCard
+                platform="godaddy" name="GoDaddy" desc="Domain management and DNS verification"
+                color="bg-gray-100" textColor="text-gray-600"
+                connectEndpoint="/api/integrations/godaddy/connect"
+                fields={[
+                  { key: 'api_key', label: 'API Key', placeholder: 'your-godaddy-api-key', type: 'password' },
+                  { key: 'api_secret', label: 'API Secret', placeholder: 'your-godaddy-api-secret', type: 'password',
+                    help: 'Get your API key at developer.godaddy.com → API Keys' },
+                ]}
+              />
             </div>
           )}
 

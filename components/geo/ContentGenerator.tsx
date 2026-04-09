@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
 
 interface ContentGeneratorProps {
@@ -39,6 +40,37 @@ export default function ContentGenerator({ onGenerated, prefillPrompt = '' }: Co
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
+  const [promptIdeas, setPromptIdeas] = useState<string[]>([])
+  const [showIdeas, setShowIdeas] = useState(false)
+
+  useEffect(() => {
+    async function loadIdeas() {
+      if (!activeClient) return
+      const supabase = createClient()
+      // Try tracked prompts first
+      const { data: prompts } = await supabase
+        .from('prompts')
+        .select('text')
+        .eq('client_id', activeClient.id)
+        .eq('is_active', true)
+        .limit(5)
+      if (prompts && prompts.length > 0) {
+        setPromptIdeas(prompts.map((p) => p.text))
+      } else {
+        // Generate from industry
+        const ind = activeClient.industry || activeClient.name
+        setPromptIdeas([
+          `What's the best ${ind.toLowerCase()} near me?`,
+          `How do I choose a good ${ind.toLowerCase()}?`,
+          `${ind} reviews and recommendations`,
+          `Top ${ind.toLowerCase()} companies for small businesses`,
+          `What does a ${ind.toLowerCase()} actually do?`,
+        ])
+      }
+    }
+    loadIdeas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient])
 
   async function handleGenerate() {
     if (!activeClient || !targetPrompt.trim()) return
@@ -87,9 +119,26 @@ export default function ContentGenerator({ onGenerated, prefillPrompt = '' }: Co
 
         {/* Target Prompt */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Target prompt <span className="text-red-500">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-sm font-medium text-gray-700">
+              Target prompt <span className="text-red-500">*</span>
+            </label>
+            {promptIdeas.length > 0 && (
+              <button type="button" onClick={() => setShowIdeas(!showIdeas)} className="text-xs text-brand hover:underline">
+                {showIdeas ? 'Hide ideas' : 'Need ideas?'}
+              </button>
+            )}
+          </div>
+          {showIdeas && promptIdeas.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {promptIdeas.map((idea, i) => (
+                <button key={i} type="button" onClick={() => { setTargetPrompt(idea); setShowIdeas(false) }}
+                  className="px-2.5 py-1 text-xs bg-brand-bg text-brand rounded-full border border-brand-border hover:bg-brand hover:text-white transition-colors truncate max-w-full">
+                  {idea}
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
             value={targetPrompt}
             onChange={(e) => setTargetPrompt(e.target.value)}
