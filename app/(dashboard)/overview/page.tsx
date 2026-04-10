@@ -232,12 +232,14 @@ export default function OverviewPage() {
     const promptIds = [...new Set(results.map((r) => r.prompt_id))]
 
     // Fetch prompt texts
-    const { data: prompts } = await supabase
-      .from('prompts')
-      .select('id, text')
-      .in('id', promptIds.length > 0 ? promptIds : ['none'])
-
-    const promptMap = new Map((prompts || []).map((p) => [p.id, p.text]))
+    let promptMap = new Map<string, string>()
+    if (promptIds.length > 0) {
+      const { data: prompts } = await supabase
+        .from('prompts')
+        .select('id, text')
+        .in('id', promptIds)
+      promptMap = new Map((prompts || []).map((p) => [p.id, p.text]))
+    }
 
     const gapMap = new Map<string, Set<string>>()
     for (const r of results) {

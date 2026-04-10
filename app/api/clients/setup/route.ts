@@ -42,13 +42,18 @@ export async function POST(request: Request) {
 
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-  console.log('Setup starting for client:', client.name)
+  console.log('Setup starting for client:', client.name, '| domain:', client.domain)
 
   const clientContext = buildClientContext(client)
   const steps: string[] = []
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    timeout: 20000,
+    maxRetries: 0,
+  })
 
   // ── STEP 1: Discover competitors ──
+  console.log('Starting Step 1: competitor discovery')
   let competitorNames: string[] = []
   try {
     const res = await anthropic.messages.create({
@@ -74,11 +79,13 @@ export async function POST(request: Request) {
       }
     }
   } catch (e: any) {
-    console.error('STEP 1 Competitor discovery failed:', e)
+    console.error('STEP 1 failed:', e.message)
     steps.push(`Competitor discovery failed: ${e.message}`)
   }
+  console.log('Step 1 complete:', competitorNames.length, 'competitors')
 
   // ── STEP 2: Generate tracking prompts ──
+  console.log('Starting Step 2: prompts')
   try {
     const res = await anthropic.messages.create({
       model: MODELS.sonnet,
@@ -98,16 +105,18 @@ export async function POST(request: Request) {
           category: ['awareness', 'evaluation', 'purchase'].includes(p.category) ? p.category : 'awareness',
           is_active: true,
         }))
-        await admin.from('prompts').insert(rows).select('id')
+        await admin.from('prompts').insert(rows)
         steps.push(`Added ${rows.length} tracking prompts`)
       }
     }
   } catch (e: any) {
-    console.error('STEP 2 Prompt generation failed:', e)
+    console.error('STEP 2 failed:', e.message)
     steps.push(`Prompt generation failed: ${e.message}`)
   }
+  console.log('Step 2 complete')
 
   // ── STEP 3: Generate buyer-intent keywords ──
+  console.log('Starting Step 3: keywords')
   try {
     if (client.domain) {
       const compDomains = competitorNames.length > 0
@@ -132,35 +141,21 @@ export async function POST(request: Request) {
       }
 
       if (discoveredKws.length > 0) {
-        const keywordRows = []
-        for (const kw of discoveredKws) {
-          try {
-            const result = await searchKeyword(kw, client.domain, compDomains)
-            keywordRows.push({
-              client_id, keyword: kw, category: 'category' as const,
-              monthly_volume: result.monthlyVolume, your_rank: result.position,
-              top_competitor_name: result.topCompetitorName, top_competitor_rank: result.topCompetitorRank,
-              ai_visible: 'no' as const,
-            })
-          } catch {
-            keywordRows.push({
-              client_id, keyword: kw, category: 'category' as const,
-              monthly_volume: null, your_rank: null,
-              top_competitor_name: null, top_competitor_rank: null,
-              ai_visible: 'no' as const,
-            })
-          }
-        }
-        if (keywordRows.length > 0) {
-          await admin.from('keywords').insert(keywordRows)
-          steps.push(`Added ${keywordRows.length} keywords`)
-        }
+        const keywordRows = discoveredKws.map((kw) => ({
+          client_id, keyword: kw, category: 'category' as const,
+          monthly_volume: null, your_rank: null,
+          top_competitor_name: null, top_competitor_rank: null,
+          ai_visible: 'no' as const,
+        }))
+        await admin.from('keywords').insert(keywordRows)
+        steps.push(`Added ${keywordRows.length} keywords`)
       }
     }
   } catch (e: any) {
-    console.error('STEP 3 Keyword discovery failed:', e)
+    console.error('STEP 3 failed:', e.message)
     steps.push(`Keyword discovery failed: ${e.message}`)
   }
+  console.log('Step 3 complete')
 
   console.log('Setup complete. Steps:', JSON.stringify(steps))
 

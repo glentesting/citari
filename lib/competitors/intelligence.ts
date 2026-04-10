@@ -42,7 +42,7 @@ export async function generateCompetitorIntelligence(
   competitorContent: CompetitorContent[],
   scanContext?: string
 ): Promise<CompetitorIntelligence> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 30000, maxRetries: 0 })
   const clientContext = buildClientContext(client)
 
   const contentSummary = competitorContent
