@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from './models'
 
 /**
  * Simple string-match helpers (still used as fast pre-checks).
@@ -77,7 +78,7 @@ export async function analyzeResponseQuality(
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001', // fast + cheap for analysis
+      model: MODELS.haiku, // fast + cheap for analysis
       max_tokens: 512,
       system: `Analyze an AI model response for brand visibility quality. The brand is "${brandName}". Competitors: ${competitorNames.join(', ') || 'none specified'}.
 

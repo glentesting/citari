@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -93,7 +94,7 @@ ${(compAds || []).map((a) => `- [${a.platform}] ${a.ad_text?.slice(0, 100)}`).jo
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
+    model: MODELS.sonnet,
     max_tokens: 2048,
     system: `You are a senior competitive intelligence analyst briefing a consultant.
 Write a clear, direct competitive brief covering:

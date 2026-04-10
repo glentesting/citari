@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -159,7 +160,7 @@ ${citedGeo.length > 0 ? `Cited content: ${citedGeo.map((g) => g.title).join(', '
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
+    model: MODELS.sonnet,
     max_tokens: 2048,
     system: `You are a senior SEO and AI visibility strategist writing a monthly intelligence briefing for a client. Write in plain English, no jargon. Lead with the most important finding. Be specific about which competitors are winning and on which prompts. Give 3 clear recommended actions ranked by expected impact. Tone: direct, confident, consultant-quality.
 

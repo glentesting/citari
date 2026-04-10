@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 import { searchKeyword } from '@/lib/keywords/serper'
 import { scanPrompt } from '@/lib/ai/scan'
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const res = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: MODELS.sonnet,
       max_tokens: 1024,
       system: `Identify the top 5 competitors for this business. Return ONLY valid JSON: {"competitors":[{"name":"...","domain":"..."}]}`,
       messages: [{ role: 'user', content: `Company: ${client.name}\nDomain: ${client.domain || 'N/A'}\nIndustry: ${client.industry || 'N/A'}` }],
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const res = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: MODELS.sonnet,
       max_tokens: 2048,
       system: `Generate 10 tracking prompts — these are questions that POTENTIAL CUSTOMERS would ask an AI model when looking for this type of business or service. Focus on what real buyers search for, not industry directories or internal tools. Include location-aware queries if relevant. Return ONLY valid JSON: {"prompts":[{"text":"...","category":"awareness|evaluation|purchase"}]}`,
       messages: [{ role: 'user', content: `Company: ${client.name}\nIndustry: ${client.industry || 'N/A'}\nCompetitors: ${competitorNames.join(', ') || 'Unknown'}` }],
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
       const anthropicKw = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       const industry = client.industry || client.name
       const kwRes = await anthropicKw.messages.create({
-        model: 'claude-sonnet-4-5-20250514',
+        model: MODELS.sonnet,
         max_tokens: 1024,
         system: `Generate 8 keywords that a POTENTIAL CLIENT would type into Google when searching for ${industry} services in their area. Focus exclusively on buyer-intent keywords — what someone types when they need to hire someone.\n\nFor a law firm: 'healthcare attorney near me', 'trademark lawyer Dallas', 'business lawyer for doctors'.\n\nDo NOT generate directory names, award sites, publication names, or industry association terms. Only real search queries from real potential clients.\n\nReturn ONLY valid JSON: {"keywords":["keyword1","keyword2",...]}`,
         messages: [{ role: 'user', content: `Company: ${client.name}\nIndustry: ${industry}\nDomain: ${client.domain || 'N/A'}` }],

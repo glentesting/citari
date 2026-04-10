@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: MODELS.haiku,
     max_tokens: 2048,
     system: `You are a content strategist. Analyze the competitor's content vs the client's content and identify gaps — topics the competitor covers that the client doesn't.
 

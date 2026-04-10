@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 const LOCAL_KEYWORDS = [
   'roofing', 'plumbing', 'hvac', 'dental', 'dentist', 'restaurant', 'law firm',
@@ -103,7 +104,7 @@ Identify the top 5 competitors.`
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
+    model: MODELS.sonnet,
     max_tokens: 1024,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],

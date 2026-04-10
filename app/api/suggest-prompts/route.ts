@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -87,7 +88,7 @@ Competitors: ${competitorNames.length > 0 ? competitorNames.join(', ') : 'None s
 Generate 15 tracking prompts for this company.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: MODELS.haiku,
     max_tokens: 1500,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],

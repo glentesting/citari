@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -123,7 +124,7 @@ EXISTING GEO CONTENT: ${geoCount || 0} pieces created
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
+    model: MODELS.sonnet,
     max_tokens: 2048,
     system: `You are an AI visibility strategist. A client is currently at ${currentScore}% AI visibility and wants to reach ${target_score}%. Analyze their data and create a specific, actionable roadmap.
 

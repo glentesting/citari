@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from './models'
 
 export interface GenerateContentParams {
   targetPrompt: string
@@ -68,7 +69,7 @@ Tone: ${params.tone}
 Word count target: ${params.wordCount} words`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
+    model: MODELS.sonnet,
     max_tokens: 4096,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],

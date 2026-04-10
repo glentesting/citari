@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { MODELS } from './models'
 import { detectBrandMention, detectCompetitorMentions, analyzeResponseQuality } from './analyze'
 
 export interface ScanResultRow {
@@ -21,7 +22,7 @@ export interface ScanResultRow {
 async function queryChatGPT(promptText: string): Promise<string> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.openai,
     messages: [{ role: 'user', content: promptText }],
     max_tokens: 1024,
   })
@@ -31,7 +32,7 @@ async function queryChatGPT(promptText: string): Promise<string> {
 async function queryClaude(promptText: string): Promise<string> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: MODELS.haiku,
     max_tokens: 1024,
     messages: [{ role: 'user', content: promptText }],
   })
