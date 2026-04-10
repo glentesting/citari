@@ -98,10 +98,40 @@ export async function POST(request: Request) {
           .eq('competitor_id', comp.id)
           .limit(10)
 
+        // Pull scan data showing where this competitor appears
+        const { data: scans } = await admin.from('scan_results')
+          .select('response_excerpt, competitor_mentions, mentioned, prompt_id')
+          .eq('client_id', client_id)
+          .order('scanned_at', { ascending: false })
+          .limit(100)
+
+        const { data: prompts } = await admin.from('prompts')
+          .select('id, text')
+          .eq('client_id', client_id)
+
+        const promptMap = new Map((prompts || []).map((p) => [p.id, p.text]))
+
+        const compScans = (scans || []).filter(
+          (s: any) => s.competitor_mentions?.includes(comp.name)
+        )
+        const clientMissedPrompts = compScans
+          .filter((s: any) => !s.mentioned)
+          .map((s: any) => promptMap.get(s.prompt_id))
+          .filter(Boolean)
+
+        const scanContext = compScans.length > 0
+          ? `Competitor appears in ${compScans.length}/${(scans || []).length} scanned responses.\n` +
+            `Client NOT mentioned in ${compScans.filter((s: any) => !s.mentioned).length} of those.\n` +
+            (clientMissedPrompts.length > 0
+              ? `Prompts where competitor wins and client is absent:\n${clientMissedPrompts.slice(0, 5).map((p) => `- "${p}"`).join('\n')}`
+              : '')
+          : undefined
+
         const intel = await generateCompetitorIntelligence(
           client,
           { name: comp.name, domain: comp.domain },
-          content || []
+          content || [],
+          scanContext
         )
 
         await admin.from('competitors').update({
