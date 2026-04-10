@@ -4,9 +4,8 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { crawlCompetitorSitemap, fetchPageContent } from '@/lib/competitors/crawl'
 import { generateCompetitorIntelligence } from '@/lib/competitors/intelligence'
-import { runCompetitorAIAudit } from '@/lib/competitors/ai-audit'
 
-export const maxDuration = 120
+export const maxDuration = 300
 
 export async function POST(request: Request) {
   try {
@@ -135,27 +134,8 @@ export async function POST(request: Request) {
           scanContext
         )
 
-        // Run AI audit — ask AI models directly about this competitor
-        let auditSection = ''
-        try {
-          const audit = await runCompetitorAIAudit(comp.name, comp.domain, client.industry || null)
-          if (audit.aiPerception) {
-            auditSection = [
-              '\n\n## What AI Models Believe\n',
-              audit.aiPerception,
-              '',
-              ...(audit.repeatedClaims.length > 0 ? ['**Claims AI repeats (citation weight):**', ...audit.repeatedClaims.map((c) => `- ${c}`), ''] : []),
-              ...(audit.perceivedStrengths.length > 0 ? ['**Strengths AI attributes:**', ...audit.perceivedStrengths.map((s) => `- ${s}`), ''] : []),
-              ...(audit.perceivedWeaknesses.length > 0 ? ['**Weaknesses AI mentions:**', ...audit.perceivedWeaknesses.map((w) => `- ${w}`), ''] : []),
-              ...(audit.citedSources.length > 0 ? [`**Sources AI draws on:** ${audit.citedSources.join(', ')}`] : []),
-            ].join('\n')
-          }
-        } catch (e: any) {
-          console.error(`AI audit failed for ${comp.name}:`, e)
-        }
-
         await admin.from('competitors').update({
-          intel_brief: (intel.intel_brief || '') + auditSection,
+          intel_brief: intel.intel_brief,
           why_winning: intel.why_winning,
           content_gaps: intel.content_gaps,
           visibility_score: intel.visibility_score,
