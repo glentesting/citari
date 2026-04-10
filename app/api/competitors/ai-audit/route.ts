@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
       // Strip any existing "What AI Models Believe" section before appending
       let baseBrief = (current?.intel_brief || '')
-        .replace(/\n*## What AI Models Believe[\s\S]*$/, '')
+        .replace(/\n*## What AI Models Believe[\s\S]*?(?=\n## |\s*$)/, '')
         .trimEnd()
 
       updateData.intel_brief = baseBrief + '\n\n' + auditSection
