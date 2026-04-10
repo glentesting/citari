@@ -315,6 +315,7 @@ export default function CompetitorsPage() {
                         competitorId={comp.id}
                         competitorName={comp.name}
                         competitorDomain={comp.domain}
+                        onDeleted={fetchData}
                       />
                     ))}
                 </div>

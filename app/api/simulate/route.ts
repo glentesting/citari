@@ -123,10 +123,12 @@ EXISTING GEO CONTENT: ${geoCount || 0} pieces created
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const response = await anthropic.messages.create({
-    model: MODELS.sonnet,
-    max_tokens: 2048,
-    system: `You are an AI visibility strategist. A client is currently at ${currentScore}% AI visibility and wants to reach ${target_score}%. Analyze their data and create a specific, actionable roadmap.
+  let text: string
+  try {
+    const response = await anthropic.messages.create({
+      model: MODELS.sonnet,
+      max_tokens: 2048,
+      system: `You are an AI visibility strategist. A client is currently at ${currentScore}% AI visibility and wants to reach ${target_score}%. Analyze their data and create a specific, actionable roadmap.
 
 Return ONLY valid JSON in this exact format:
 {
@@ -145,11 +147,14 @@ Return ONLY valid JSON in this exact format:
 }
 
 Be specific about content topics, which prompts to target, and which competitors to counter. Give 5-8 actions ordered by expected impact. Each action should have realistic impact estimates that sum to roughly the gap they need to close.`,
-    messages: [{ role: 'user', content: `Create a visibility roadmap based on this data:\n\n${dataBrief}` }],
-  })
-
-  const block = response.content[0]
-  const text = block.type === 'text' ? block.text : ''
+      messages: [{ role: 'user', content: `Create a visibility roadmap based on this data:\n\n${dataBrief}` }],
+    })
+    const block = response.content[0]
+    text = block.type === 'text' ? block.text : ''
+  } catch (e: any) {
+    console.error('Simulation AI call failed:', e)
+    return NextResponse.json({ error: 'AI generation failed — please try again' }, { status: 502 })
+  }
 
   let parsed: any
   try {

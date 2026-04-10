@@ -79,16 +79,22 @@ export async function POST(request: Request) {
   const competitorNames = (competitors || []).map((c) => c.name)
 
   // Generate content
-  const result = await generateGeoContent({
-    targetPrompt: target_prompt,
-    contentType: content_type,
-    tone,
-    wordCount: word_count,
-    clientName: client.name,
-    clientDomain: client.domain || undefined,
-    clientIndustry: client.industry || undefined,
-    competitorNames,
-  })
+  let result: { title: string; content: string }
+  try {
+    result = await generateGeoContent({
+      targetPrompt: target_prompt,
+      contentType: content_type,
+      tone,
+      wordCount: word_count,
+      clientName: client.name,
+      clientDomain: client.domain || undefined,
+      clientIndustry: client.industry || undefined,
+      competitorNames,
+    })
+  } catch (e: any) {
+    console.error('Content generation AI call failed:', e)
+    return NextResponse.json({ error: 'AI generation failed — please try again' }, { status: 502 })
+  }
 
   // Save to geo_content table
   const { data: saved, error: saveError } = await adminSupabase

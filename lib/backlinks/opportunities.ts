@@ -1,5 +1,14 @@
 const SERPER_API_URL = 'https://google.serper.dev/search'
 
+/** Domains that will never provide a real backlink opportunity */
+const BLOCKED_DOMAINS = new Set([
+  'linkedin.com', 'instagram.com', 'facebook.com', 'twitter.com', 'x.com',
+  'youtube.com', 'wikipedia.org', 'reddit.com', 'tiktok.com', 'pinterest.com',
+  'yelp.com', 'google.com', 'apple.com', 'amazon.com', 'glassdoor.com',
+  'indeed.com', 'ziprecruiter.com', 'crunchbase.com', 'bbb.org',
+  'maps.google.com', 'play.google.com', 'apps.apple.com',
+])
+
 export interface BacklinkOpportunity {
   source_domain: string
   source_url: string | null
@@ -43,9 +52,10 @@ export async function discoverBacklinkOpportunities(
         for (const result of data.organic || []) {
           const domain = (result.link || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
 
-          // Skip if it's the client domain, a competitor domain, or already seen
+          // Skip if it's the client domain, a competitor domain, blocked, or already seen
           if (!domain || domain.includes(clientDomain.replace('www.', '')) || seenDomains.has(domain)) continue
           if (competitorDomains.some((cd) => domain.includes(cd.replace('www.', '')))) continue
+          if (BLOCKED_DOMAINS.has(domain) || [...BLOCKED_DOMAINS].some((bd) => domain.endsWith(`.${bd}`) || domain === bd)) continue
 
           seenDomains.add(domain)
 

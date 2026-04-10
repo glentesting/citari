@@ -60,29 +60,34 @@ export async function POST(request: Request) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const response = await anthropic.messages.create({
-    model: MODELS.haiku,
-    max_tokens: 800,
-    system: `Generate valid JSON-LD schema markup for ${typeDescriptions[schema_type] || schema_type}.
+  let text: string
+  try {
+    const response = await anthropic.messages.create({
+      model: MODELS.haiku,
+      max_tokens: 800,
+      system: `Generate valid JSON-LD schema markup for ${typeDescriptions[schema_type] || schema_type}.
 The schema must be:
 1. Valid according to schema.org specification
 2. Optimized for AI model citation — include all recommended properties
 3. Include specific data provided, fill gaps with best practices
-4. Return ONLY the raw JSON object wrapped in a script tag, no markdown, no explanation
+4. Return ONLY the raw JSON object, no markdown, no explanation, no script tags
 
 Business: ${client.name}
 Domain: ${client.domain || 'not provided'}
 Industry: ${client.industry || 'not specified'}
-Page URL: ${page_url || client.domain ? `https://${client.domain}` : 'not provided'}`,
-    messages: [{
-      role: 'user',
-      content: contentContext
-        ? `Generate ${schema_type} schema based on this content:\n\n${contentContext.slice(0, 3000)}`
-        : `Generate ${schema_type} schema for ${client.name} (${client.industry || 'general business'}).`,
-    }],
-  })
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : ''
+Page URL: ${page_url || (client.domain ? `https://${client.domain}` : 'not provided')}`,
+      messages: [{
+        role: 'user',
+        content: contentContext
+          ? `Generate ${schema_type} schema based on this content:\n\n${contentContext.slice(0, 3000)}`
+          : `Generate ${schema_type} schema for ${client.name} (${client.industry || 'general business'}).`,
+      }],
+    })
+    text = response.content[0].type === 'text' ? response.content[0].text : ''
+  } catch (e: any) {
+    console.error('Schema generation AI call failed:', e)
+    return NextResponse.json({ error: 'AI generation failed — please try again' }, { status: 502 })
+  }
 
   // Extract JSON from response (might be wrapped in script tags or code blocks)
   let schemaJson: any
