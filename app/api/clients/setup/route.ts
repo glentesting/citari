@@ -50,10 +50,16 @@ export async function POST(request: Request) {
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
   console.log('Setup starting for client:', client.name, '| domain:', client.domain)
+  console.log('Client data:', JSON.stringify(client))
 
+  console.log('A - building context')
   const clientContext = buildClientContext(client)
+  console.log('B - context built:', clientContext.slice(0, 100))
+
   const steps: string[] = []
+  console.log('C - creating anthropic')
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  console.log('D - anthropic created')
 
   // ── STEP 1: Discover competitors ──
   console.log('Starting Step 1: competitor discovery')
