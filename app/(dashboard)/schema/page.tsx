@@ -45,6 +45,7 @@ export default function SchemaPage() {
   const [loadingLib, setLoadingLib] = useState(true)
 
   // Audit
+  const [infoOpen, setInfoOpen] = useState(false)
   const [auditing, setAuditing] = useState(false)
   const [auditScore, setAuditScore] = useState<number | null>(null)
   const [auditResults, setAuditResults] = useState<AuditResult[]>([])
@@ -142,12 +143,25 @@ export default function SchemaPage() {
       <PageHeader title="Schema Markup" subtitle={`Structured data for ${activeClient.name} — invisible code that tells AI models what your business offers. AI cites businesses with proper schema 2.3x more often.`} />
 
       {/* What is Schema info box */}
-      <details className="mt-4 bg-brand-bg border border-brand-border rounded-xl">
-        <summary className="px-5 py-3 text-sm font-medium text-brand cursor-pointer">What is Schema Markup?</summary>
-        <p className="px-5 pb-4 text-xs text-gray-600 leading-relaxed">
-          Schema markup is invisible code added to your website that tells AI models and search engines exactly what your business offers. Businesses with proper schema are cited by AI models 2.3x more often. Generate the code here, then paste it into your website&apos;s &lt;head&gt; section or use a plugin like Yoast (WordPress) or RankMath.
-        </p>
-      </details>
+      <div className="mt-4 bg-brand-bg border border-brand-border rounded-xl">
+        <button
+          onClick={() => setInfoOpen(!infoOpen)}
+          className="w-full px-5 py-3 flex items-center justify-between text-sm font-medium text-brand cursor-pointer"
+        >
+          What is Schema Markup?
+          <svg
+            className={`w-4 h-4 text-brand transition-transform ${infoOpen ? 'rotate-180' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        {infoOpen && (
+          <p className="px-5 pb-4 text-xs text-gray-600 leading-relaxed">
+            Schema markup is invisible code added to your website that tells AI models and search engines exactly what your business offers. Businesses with proper schema are cited by AI models 2.3x more often. Generate the code here, then paste it into your website&apos;s &lt;head&gt; section or use a plugin like Yoast (WordPress) or RankMath.
+          </p>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="mt-6 flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
