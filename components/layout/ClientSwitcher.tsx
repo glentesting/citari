@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
 import AddClientModal from '@/components/layout/AddClientModal'
 
@@ -10,40 +9,47 @@ export default function ClientSwitcher() {
   const [open, setOpen] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false)
-        setConfirmDeleteId(null)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  async function handleDelete(clientId: string) {
+  const deleteTarget = clients.find((c) => c.id === confirmDeleteId)
+
+  async function handleDelete() {
+    if (!confirmDeleteId) return
+    setDeleting(true)
     try {
       const res = await fetch('/api/clients/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: clientId }),
+        body: JSON.stringify({ client_id: confirmDeleteId }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         alert(data.error || 'Failed to delete')
+        setDeleting(false)
         return
       }
     } catch (e) {
       console.error('Failed to delete client:', e)
       alert('Delete failed')
+      setDeleting(false)
       return
     }
-    setConfirmDeleteId(null)
-    if (activeClient?.id === clientId) {
+    if (activeClient?.id === confirmDeleteId) {
       localStorage.removeItem('citari_active_client')
     }
+    setConfirmDeleteId(null)
+    setDeleting(false)
     await refreshClients()
   }
 
@@ -58,7 +64,7 @@ export default function ClientSwitcher() {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => { setOpen(!open); setConfirmDeleteId(null) }}
+        onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
       >
         <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -79,32 +85,6 @@ export default function ClientSwitcher() {
           ) : (
             clients.map((client) => {
               const isActive = activeClient?.id === client.id
-              const isConfirming = confirmDeleteId === client.id
-
-              if (isConfirming) {
-                return (
-                  <div key={client.id} className="px-3 py-2 bg-red-50 border-b border-red-100">
-                    <p className="text-xs font-medium text-red-700 mb-2">
-                      Delete {client.name} and all data?
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDelete(client.id)}
-                        className="px-3 py-1 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700"
-                      >
-                        Yes, delete
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )
-              }
-
               return (
                 <div
                   key={client.id}
@@ -131,6 +111,7 @@ export default function ClientSwitcher() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
+                      setOpen(false)
                       setConfirmDeleteId(client.id)
                     }}
                     className="p-1.5 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
@@ -155,6 +136,41 @@ export default function ClientSwitcher() {
               </svg>
               Add new client
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal — renders outside dropdown */}
+      {confirmDeleteId && deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Delete {deleteTarget.name}?</h3>
+                <p className="text-xs text-gray-500 mt-0.5">All data including competitors, prompts, keywords, and scan results will be permanently deleted.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#A32D2D', color: '#F7C1C1' }}
+              >
+                {deleting ? 'Deleting...' : 'Delete client'}
+              </button>
+            </div>
           </div>
         </div>
       )}
