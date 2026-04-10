@@ -2,12 +2,21 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
+import { buildClientContext } from '@/lib/utils'
 
-export const maxDuration = 30
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ])
+
+export const maxDuration = 60
 
 export async function POST(request: Request) {
-  const log: string[] = []
-
   try {
     const cookieStore = cookies()
     const supabase = createServerClient(
@@ -24,63 +33,126 @@ export async function POST(request: Request) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized', log }, { status: 401 })
-    log.push('Auth OK: ' + user.id)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { client_id } = await request.json()
-    if (!client_id) return NextResponse.json({ error: 'client_id required', log }, { status: 400 })
-    log.push('Client ID: ' + client_id)
+    if (!client_id) return NextResponse.json({ error: 'client_id required' }, { status: 400 })
 
     const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    log.push('Admin client created')
 
-    // Fetch client
-    const { data: client, error: clientError } = await admin
+    // Check if setup already ran (competitors exist)
+    const { data: existingComps } = await admin.from('competitors').select('id').eq('client_id', client_id).limit(1)
+    if (existingComps && existingComps.length > 0) {
+      return NextResponse.json({ steps: ['Already set up'], success: true, competitors_found: existingComps.length })
+    }
+
+    const { data: client } = await admin
       .from('clients')
-      .select('*')
+      .select('name, domain, industry, location, specialization, description, target_clients, differentiators')
       .eq('id', client_id)
       .single()
 
-    if (clientError) {
-      log.push('Client fetch ERROR: ' + clientError.message)
-      return NextResponse.json({ error: clientError.message, log }, { status: 500 })
-    }
-    if (!client) {
-      log.push('Client not found')
-      return NextResponse.json({ error: 'Client not found', log }, { status: 404 })
-    }
+    if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-    log.push('Client found: ' + JSON.stringify(client))
+    console.log('Setup running for:', client.name)
+    const clientContext = buildClientContext(client)
+    const steps: string[] = []
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    // Test competitor insert with new columns
-    const { data: inserted, error: insertError } = await admin
-      .from('competitors')
-      .insert({
-        client_id,
-        name: 'TEST COMPETITOR',
-        domain: 'test.com',
-        intel_brief: 'test brief',
-        why_winning: 'test why',
-        content_gaps: 'test gaps',
-        visibility_score: 50,
-      })
-      .select()
-      .single()
+    // ── STEP 1: Discover competitors ──
+    let competitorNames: string[] = []
+    try {
+      const res = await withTimeout(anthropic.messages.create({
+        model: MODELS.sonnet,
+        max_tokens: 1024,
+        system: `Identify the top 5 direct competitors for this business. They must be in the same specialization AND serve the same geographic area. Return ONLY valid JSON: {"competitors":[{"name":"...","domain":"..."}]}`,
+        messages: [{ role: 'user', content: `Business: ${clientContext}\nDomain: ${client.domain || 'N/A'}` }],
+      }), 25000)
 
-    if (insertError) {
-      log.push('Competitor insert ERROR: ' + insertError.message)
-    } else {
-      log.push('Competitor insert OK: ' + JSON.stringify(inserted))
-      // Clean up test data
-      if (inserted?.id) {
-        await admin.from('competitors').delete().eq('id', inserted.id)
-        log.push('Test competitor deleted')
+      const text = res.content[0].type === 'text' ? res.content[0].text : ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        if (Array.isArray(parsed.competitors)) {
+          const rows = parsed.competitors.slice(0, 5).map((c: any) => ({
+            client_id,
+            name: c.name,
+            domain: c.domain || null,
+          }))
+          await admin.from('competitors').insert(rows)
+          competitorNames = rows.map((r: any) => r.name)
+          steps.push(`Added ${rows.length} competitors`)
+        }
       }
+    } catch (e: any) {
+      console.error('Step 1 failed:', e.message)
+      steps.push(`Competitor discovery failed: ${e.message}`)
     }
 
-    return NextResponse.json({ success: true, log })
+    // ── STEP 2: Generate tracking prompts ──
+    try {
+      const res = await withTimeout(anthropic.messages.create({
+        model: MODELS.sonnet,
+        max_tokens: 2048,
+        system: `Generate 10 tracking prompts — questions that POTENTIAL CUSTOMERS would ask an AI model when looking for this type of business. Every prompt MUST be specific to this business's exact specialization and locations. Return ONLY valid JSON: {"prompts":[{"text":"...","category":"awareness|evaluation|purchase"}]}`,
+        messages: [{ role: 'user', content: `Business: ${clientContext}\nDomain: ${client.domain || 'N/A'}\nCompetitors: ${competitorNames.join(', ') || 'Unknown'}` }],
+      }), 25000)
+
+      const text = res.content[0].type === 'text' ? res.content[0].text : ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        if (Array.isArray(parsed.prompts)) {
+          const rows = parsed.prompts.slice(0, 10).map((p: any) => ({
+            client_id,
+            text: p.text,
+            category: ['awareness', 'evaluation', 'purchase'].includes(p.category) ? p.category : 'awareness',
+            is_active: true,
+          }))
+          await admin.from('prompts').insert(rows)
+          steps.push(`Added ${rows.length} tracking prompts`)
+        }
+      }
+    } catch (e: any) {
+      console.error('Step 2 failed:', e.message)
+      steps.push(`Prompt generation failed: ${e.message}`)
+    }
+
+    // ── STEP 3: Generate buyer-intent keywords ──
+    try {
+      if (client.domain) {
+        const kwRes = await withTimeout(anthropic.messages.create({
+          model: MODELS.sonnet,
+          max_tokens: 1024,
+          system: `Generate 8 buyer-intent keywords for this business.${client.location ? ` Include keywords for: ${client.location}.` : ''} Do NOT generate directory names or award sites. Return ONLY valid JSON: {"keywords":["keyword1","keyword2",...]}`,
+          messages: [{ role: 'user', content: `Business: ${clientContext}\nDomain: ${client.domain}` }],
+        }), 25000)
+
+        const kwText = kwRes.content[0].type === 'text' ? kwRes.content[0].text : ''
+        const kwMatch = kwText.match(/\{[\s\S]*\}/)
+        if (kwMatch) {
+          const parsed = JSON.parse(kwMatch[0])
+          if (Array.isArray(parsed.keywords)) {
+            const keywordRows = parsed.keywords.slice(0, 8).map((kw: string) => ({
+              client_id, keyword: kw, category: 'category' as const,
+              monthly_volume: null, your_rank: null,
+              top_competitor_name: null, top_competitor_rank: null,
+              ai_visible: 'no' as const,
+            }))
+            await admin.from('keywords').insert(keywordRows)
+            steps.push(`Added ${keywordRows.length} keywords`)
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error('Step 3 failed:', e.message)
+      steps.push(`Keyword discovery failed: ${e.message}`)
+    }
+
+    console.log('Setup done:', JSON.stringify(steps))
+    return NextResponse.json({ steps, success: true, competitors_found: competitorNames.length })
   } catch (e: any) {
-    log.push('TOP-LEVEL CRASH: ' + e.message)
-    return NextResponse.json({ error: e.message, log }, { status: 500 })
+    console.error('Setup crashed:', e)
+    return NextResponse.json({ error: e.message || 'Setup failed' }, { status: 500 })
   }
 }

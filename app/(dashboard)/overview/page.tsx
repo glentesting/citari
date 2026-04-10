@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
 import { useRouter } from 'next/navigation'
@@ -47,12 +47,15 @@ export default function OverviewPage() {
   const [setupStep, setSetupStep] = useState(0)
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [enriching, setEnriching] = useState(false)
+  const setupAttempted = useRef<string | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
   // Auto-trigger setup if client has no competitors, then enrich after
   useEffect(() => {
     if (!activeClient) return
+    // Only attempt setup once per client
+    if (setupAttempted.current === activeClient.id) return
     let cancelled = false
 
     async function autoSetupAndEnrich() {
@@ -63,7 +66,8 @@ export default function OverviewPage() {
       if (cancelled) return
 
       if (!comps || comps.length === 0) {
-        // Phase 1: No competitors — run setup
+        // Mark as attempted BEFORE calling to prevent re-entry
+        setupAttempted.current = activeClient!.id
         setIsSettingUp(true)
         try {
           await fetch('/api/clients/setup', {
@@ -78,7 +82,7 @@ export default function OverviewPage() {
         setIsSettingUp(false)
         fetchData()
 
-        // Now check if competitors were created and need enrichment
+        // Check if competitors were created and need enrichment
         const { data: newComps } = await supabase.from('competitors')
           .select('id, intel_brief')
           .eq('client_id', activeClient!.id)
@@ -93,13 +97,15 @@ export default function OverviewPage() {
           }).catch((e) => console.error('Enrich failed:', e))
         }
       } else if (comps.some((c) => !c.intel_brief)) {
-        // Phase 2: Competitors exist but no intel — run enrich
+        setupAttempted.current = activeClient!.id
         setEnriching(true)
         fetch('/api/clients/enrich', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ client_id: activeClient!.id }),
         }).catch((e) => console.error('Enrich failed:', e))
+      } else {
+        setupAttempted.current = activeClient!.id
       }
     }
 
