@@ -247,7 +247,10 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
             )}
 
             {scanError && !scanning && (
-              <p className="mt-1 text-xs text-gray-400">Could not scan website — fill in details manually below.</p>
+              <p className="mt-1 text-xs text-gray-400">
+                Could not scan website.{' '}
+                <button type="button" onClick={() => setEditing(true)} className="text-brand hover:underline">Enter details manually</button>
+              </p>
             )}
           </div>
 
@@ -279,8 +282,8 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
             </div>
           )}
 
-          {/* Editable fields — shown only when user clicks Edit or scan failed */}
-          {(editing || scanError) && (
+          {/* Editable fields — shown ONLY when user explicitly clicks Edit */}
+          {editing && (
             <div className="space-y-3">
               {editing && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Edit details</p>}
               <div>
