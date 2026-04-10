@@ -19,14 +19,6 @@ interface ScanResult {
   industry: string
 }
 
-const setupSteps = [
-  { label: 'Discovering competitors...', key: 'competitors' },
-  { label: 'Crawling competitor websites...', key: 'crawl' },
-  { label: 'Generating tracking prompts...', key: 'prompts' },
-  { label: 'Finding keyword opportunities...', key: 'keywords' },
-  { label: 'Running competitive intelligence...', key: 'intel' },
-]
-
 export default function AddClientModal({ onClose }: AddClientModalProps) {
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
@@ -43,11 +35,9 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
     target_clients: '', differentiators: '', industry: '',
   })
 
-  // Save/setup state
+  // Save state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [settingUp, setSettingUp] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
 
   const { refreshClients, setActiveClient } = useClient()
   const supabase = createClient()
@@ -135,66 +125,11 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
     await refreshClients()
     if (client) setActiveClient(client)
 
-    if (!client) { onClose(); return }
-
-    // Fire setup in background — don't block navigation
-    fetch('/api/clients/setup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: client.id }),
-    }).catch((e) => console.error('Client setup failed:', e))
-
+    // Navigate to overview — setup will be triggered from there
     setLoading(false)
     onClose()
     router.push('/overview')
     router.refresh()
-  }
-
-  // Setup loading screen
-  if (settingUp) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md p-8">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-brand-bg rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-brand animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900">Setting up {name}...</h2>
-            <p className="text-sm text-gray-500 mt-1">Building your competitive intelligence — about 60 seconds</p>
-          </div>
-
-          <div className="space-y-3">
-            {setupSteps.map((step, i) => (
-              <div key={step.key} className="flex items-center gap-3">
-                {i < currentStep ? (
-                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  </div>
-                ) : i === currentStep ? (
-                  <div className="w-6 h-6 rounded-full bg-brand-bg flex items-center justify-center flex-shrink-0">
-                    <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0" />
-                )}
-                <span className={`text-sm ${
-                  i < currentStep ? 'text-green-600 font-medium' :
-                  i === currentStep ? 'text-gray-900 font-medium' :
-                  'text-gray-400'
-                }`}>
-                  {step.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (

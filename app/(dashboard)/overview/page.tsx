@@ -45,34 +45,65 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true)
   const [runningSetup, setRunningSetup] = useState(false)
   const [setupStep, setSetupStep] = useState(0)
+  const [isSettingUp, setIsSettingUp] = useState(false)
   const [enriching, setEnriching] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
-  // Auto-trigger enrich if competitors exist but have no intel
+  // Auto-trigger setup if client has no competitors, then enrich after
   useEffect(() => {
-    if (!activeClient || enriching) return
+    if (!activeClient) return
     let cancelled = false
 
-    async function checkAndEnrich() {
+    async function autoSetupAndEnrich() {
       const { data: comps } = await supabase.from('competitors')
         .select('id, intel_brief')
         .eq('client_id', activeClient!.id)
 
-      if (!comps || comps.length === 0 || cancelled) return
-      const needsEnrich = comps.some((c) => !c.intel_brief)
-      if (!needsEnrich) return
+      if (cancelled) return
 
-      setEnriching(true)
-      // Fire and forget
-      fetch('/api/clients/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: activeClient!.id }),
-      }).catch((e) => console.error('Enrich failed:', e))
+      if (!comps || comps.length === 0) {
+        // Phase 1: No competitors — run setup
+        setIsSettingUp(true)
+        try {
+          await fetch('/api/clients/setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: activeClient!.id }),
+          })
+        } catch (e) {
+          console.error('Setup failed:', e)
+        }
+        if (cancelled) return
+        setIsSettingUp(false)
+        fetchData()
+
+        // Now check if competitors were created and need enrichment
+        const { data: newComps } = await supabase.from('competitors')
+          .select('id, intel_brief')
+          .eq('client_id', activeClient!.id)
+
+        if (cancelled) return
+        if (newComps && newComps.length > 0 && newComps.some((c) => !c.intel_brief)) {
+          setEnriching(true)
+          fetch('/api/clients/enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: activeClient!.id }),
+          }).catch((e) => console.error('Enrich failed:', e))
+        }
+      } else if (comps.some((c) => !c.intel_brief)) {
+        // Phase 2: Competitors exist but no intel — run enrich
+        setEnriching(true)
+        fetch('/api/clients/enrich', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: activeClient!.id }),
+        }).catch((e) => console.error('Enrich failed:', e))
+      }
     }
 
-    checkAndEnrich()
+    autoSetupAndEnrich()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClient])
@@ -88,8 +119,9 @@ export default function OverviewPage() {
       if (comps && comps.length > 0 && comps.every((c) => c.intel_brief)) {
         setEnriching(false)
         clearInterval(interval)
+        fetchData()
       }
-    }, 10000)
+    }, 5000)
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enriching, activeClient])
@@ -406,7 +438,20 @@ export default function OverviewPage() {
       <div className="mt-6 space-y-6">
         {d.alertMessage && <AlertBanner message={d.alertMessage} />}
 
-        {enriching && (
+        {isSettingUp && (
+          <div className="bg-brand-bg border border-brand-border rounded-xl px-5 py-3 flex items-center gap-3">
+            <svg className="w-4 h-4 text-brand animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-brand">Setting up {activeClient.name}...</p>
+              <p className="text-xs text-brand/70">Discovering competitors, generating prompts, and finding keywords.</p>
+            </div>
+          </div>
+        )}
+
+        {enriching && !isSettingUp && (
           <div className="bg-brand-bg border border-brand-border rounded-xl px-5 py-3 flex items-center gap-3">
             <div className="w-4 h-4 rounded-full bg-brand animate-pulse flex-shrink-0" />
             <div>
