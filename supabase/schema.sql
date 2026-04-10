@@ -23,6 +23,9 @@ create table clients (
     location text,
     specialization text,
     description text,
+    target_clients text,
+    differentiators text,
+    intel_summary text,
     notes text,
     avatar_url text,
     created_at timestamptz default now()
@@ -40,6 +43,10 @@ create table competitors (
     client_id uuid references clients(id) on delete cascade,
     name text not null,
     domain text,
+    intel_brief text,
+    why_winning text,
+    content_gaps text,
+    visibility_score integer,
     created_at timestamptz default now()
 );
 

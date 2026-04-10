@@ -22,6 +22,8 @@ export function buildClientContext(client: {
   specialization?: string | null
   location?: string | null
   description?: string | null
+  target_clients?: string | null
+  differentiators?: string | null
 }): string {
   return [
     client.name,
@@ -29,6 +31,8 @@ export function buildClientContext(client: {
     client.specialization,
     client.location ? `Location: ${client.location}` : null,
     client.description,
+    client.target_clients ? `Target clients: ${client.target_clients}` : null,
+    client.differentiators ? `Differentiators: ${client.differentiators}` : null,
   ].filter(Boolean).join(' | ')
 }
 

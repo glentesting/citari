@@ -9,33 +9,52 @@ interface AddClientModalProps {
   onClose: () => void
 }
 
+interface ScanResult {
+  name: string
+  description: string
+  specialization: string
+  location: string
+  target_clients: string
+  differentiators: string
+  industry: string
+}
+
 const setupSteps = [
   { label: 'Discovering competitors...', key: 'competitors' },
+  { label: 'Crawling competitor websites...', key: 'crawl' },
   { label: 'Generating tracking prompts...', key: 'prompts' },
   { label: 'Finding keyword opportunities...', key: 'keywords' },
-  { label: 'Running first AI scan...', key: 'scan' },
+  { label: 'Running competitive intelligence...', key: 'intel' },
 ]
 
 export default function AddClientModal({ onClose }: AddClientModalProps) {
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
-  const [industry, setIndustry] = useState('')
-  const [location, setLocation] = useState('')
-  const [specialization, setSpecialization] = useState('')
-  const [description, setDescription] = useState('')
+
+  // Scan state
   const [scanning, setScanning] = useState(false)
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [scanError, setScanError] = useState(false)
+
+  // Edit mode for manual override
+  const [editing, setEditing] = useState(false)
+  const [editFields, setEditFields] = useState<ScanResult | null>(null)
+
+  // Save/setup state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [settingUp, setSettingUp] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
+
   const { refreshClients, setActiveClient } = useClient()
   const supabase = createClient()
   const router = useRouter()
 
   async function handleDomainBlur() {
     const d = domain.trim()
-    if (!d || scanning) return
+    if (!d || scanning || scanResult) return
     setScanning(true)
+    setScanError(false)
     try {
       const res = await fetch('/api/clients/analyze-domain', {
         method: 'POST',
@@ -44,14 +63,34 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
       })
       if (res.ok) {
         const data = await res.json()
-        if (data.description && !description) setDescription(data.description)
-        if (data.specialization && !specialization) setSpecialization(data.specialization)
-        if (data.location && !location) setLocation(data.location)
+        setScanResult(data)
+        setEditFields(data)
+        if (data.name && !name) setName(data.name)
+      } else {
+        setScanError(true)
       }
     } catch (e) {
       console.error('Domain scan failed:', e)
+      setScanError(true)
     }
     setScanning(false)
+  }
+
+  function handleDomainChange(val: string) {
+    setDomain(val)
+    // Reset scan when domain changes
+    if (scanResult) {
+      setScanResult(null)
+      setEditFields(null)
+      setEditing(false)
+      setScanError(false)
+    }
+  }
+
+  function getActiveData(): ScanResult {
+    if (editing && editFields) return editFields
+    if (scanResult) return scanResult
+    return { name: '', description: '', specialization: '', location: '', target_clients: '', differentiators: '', industry: '' }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -70,16 +109,20 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
 
     if (!settings?.workspace_id) { setError('No workspace found'); setLoading(false); return }
 
+    const data = getActiveData()
+
     const { data: client, error: insertError } = await supabase
       .from('clients')
       .insert({
         workspace_id: settings.workspace_id,
-        name,
+        name: name || data.name,
         domain: domain || null,
-        industry: industry || null,
-        location: location || null,
-        specialization: specialization || null,
-        description: description || null,
+        industry: data.industry || null,
+        location: data.location || null,
+        specialization: data.specialization || null,
+        description: data.description || null,
+        target_clients: data.target_clients || null,
+        differentiators: data.differentiators || null,
       })
       .select()
       .single()
@@ -91,15 +134,14 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
 
     if (!client) { onClose(); return }
 
-    // Start auto-setup
+    // Automatically trigger setup
     setLoading(false)
     setSettingUp(true)
     setCurrentStep(0)
 
-    // Animate through steps while waiting
     const stepInterval = setInterval(() => {
       setCurrentStep((prev) => Math.min(prev + 1, setupSteps.length - 1))
-    }, 4000)
+    }, 6000)
 
     try {
       await fetch('/api/clients/setup', {
@@ -109,7 +151,6 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
       })
     } catch (e) {
       console.error('Client setup failed:', e)
-      // Setup failed — still continue to dashboard
     }
 
     clearInterval(stepInterval)
@@ -132,7 +173,7 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-gray-900">Setting up {name}...</h2>
-            <p className="text-sm text-gray-500 mt-1">This takes about 30-60 seconds</p>
+            <p className="text-sm text-gray-500 mt-1">Building your competitive intelligence — about 60 seconds</p>
           </div>
 
           <div className="space-y-3">
@@ -168,7 +209,7 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Add new client</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -190,48 +231,85 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
 
           <div>
             <label htmlFor="clientDomain" className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
-            <input id="clientDomain" type="text" value={domain} onChange={(e) => setDomain(e.target.value)}
+            <input id="clientDomain" type="text" value={domain} onChange={(e) => handleDomainChange(e.target.value)}
               onBlur={handleDomainBlur}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
               placeholder="acme.com" />
+
             {scanning && (
-              <p className="text-xs text-brand mt-1 flex items-center gap-1">
-                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Scanning website...
-              </p>
+              <div className="mt-2 flex items-center gap-2 text-xs text-brand">
+                <div className="w-3 h-3 rounded-full bg-brand animate-pulse" />
+                Analyzing website...
+              </div>
+            )}
+
+            {scanError && !scanning && (
+              <p className="mt-1 text-xs text-gray-400">Could not scan website — fill in details manually below.</p>
             )}
           </div>
 
-          <div>
-            <label htmlFor="clientIndustry" className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
-            <input id="clientIndustry" type="text" value={industry} onChange={(e) => setIndustry(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-              placeholder="SaaS, Marketing, Roofing, etc." />
-          </div>
+          {/* Scan result preview card */}
+          {scanResult && !editing && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">What we found</p>
+              {scanResult.industry && (
+                <div className="flex gap-2 text-sm"><span className="text-gray-400 w-24 flex-shrink-0">Industry</span><span className="text-gray-900">{scanResult.industry}</span></div>
+              )}
+              {scanResult.specialization && (
+                <div className="flex gap-2 text-sm"><span className="text-gray-400 w-24 flex-shrink-0">Specialization</span><span className="text-gray-900">{scanResult.specialization}</span></div>
+              )}
+              {scanResult.location && (
+                <div className="flex gap-2 text-sm"><span className="text-gray-400 w-24 flex-shrink-0">Locations</span><span className="text-gray-900">{scanResult.location}</span></div>
+              )}
+              {scanResult.target_clients && (
+                <div className="flex gap-2 text-sm"><span className="text-gray-400 w-24 flex-shrink-0">Serves</span><span className="text-gray-900">{scanResult.target_clients}</span></div>
+              )}
+              {scanResult.description && (
+                <p className="text-xs text-gray-600 pt-1 border-t border-gray-200 mt-2">{scanResult.description}</p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditing(true)}
+                  className="text-xs text-brand hover:underline">
+                  Edit details
+                </button>
+              </div>
+            </div>
+          )}
 
-          <div>
-            <label htmlFor="clientLocation" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <input id="clientLocation" type="text" value={location} onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-              placeholder="e.g. Texas, Indiana, Georgia" />
-          </div>
-
-          <div>
-            <label htmlFor="clientSpecialization" className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
-            <input id="clientSpecialization" type="text" value={specialization} onChange={(e) => setSpecialization(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-              placeholder="e.g. Healthcare business law, corporate law" />
-          </div>
-
-          <div>
-            <label htmlFor="clientDescription" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea id="clientDescription" value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
-              placeholder="Brief description of what they do and who their clients are" />
-          </div>
+          {/* Editable fields — shown when no scan result, scan failed, or user clicks Edit */}
+          {(editing || (!scanResult && !scanning)) && (
+            <div className="space-y-3">
+              {editing && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Edit details</p>}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Industry</label>
+                <input type="text" value={editFields?.industry || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, industry: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  placeholder="Law, SaaS, Roofing, etc." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Specialization</label>
+                <input type="text" value={editFields?.specialization || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, specialization: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  placeholder="e.g. Healthcare business law, corporate law" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Location</label>
+                <input type="text" value={editFields?.location || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  placeholder="e.g. Texas, Indiana, Georgia" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <textarea value={editFields?.description || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, description: e.target.value }))} rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
+                  placeholder="Brief description of what they do and who their clients are" />
+              </div>
+              {editing && (
+                <button type="button" onClick={() => { setScanResult(editFields); setEditing(false) }}
+                  className="text-xs text-brand hover:underline">Done editing</button>
+              )}
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -240,9 +318,9 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
               className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Cancel
             </button>
-            <button type="submit" disabled={loading || !name.trim()}
+            <button type="submit" disabled={loading || scanning || !name.trim()}
               className="flex-1 py-2.5 text-sm font-semibold text-white bg-brand rounded-lg hover:bg-brand-dark transition-colors disabled:opacity-50">
-              {loading ? 'Creating...' : 'Add client'}
+              {loading ? 'Creating...' : scanResult ? 'Looks right — Add client' : 'Add client'}
             </button>
           </div>
         </form>

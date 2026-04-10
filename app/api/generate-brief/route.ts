@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  const { data: client } = await admin.from('clients').select('name, industry, location, specialization, description').eq('id', client_id).single()
+  const { data: client } = await admin.from('clients').select('name, industry, location, specialization, description, target_clients, differentiators').eq('id', client_id).single()
   const { data: competitor } = await admin.from('competitors').select('name, domain').eq('id', competitor_id).single()
   if (!client || !competitor) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

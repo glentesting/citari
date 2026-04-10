@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
   const { data: client } = await adminSupabase
     .from('clients')
-    .select('name, domain, industry, location, specialization, description')
+    .select('name, domain, industry, location, specialization, description, target_clients, differentiators')
     .eq('id', client_id)
     .single()
 
