@@ -115,9 +115,12 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!hasIntel && (
               <button onClick={handleAnalyze} disabled={analyzing}
-                className="px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-dark disabled:opacity-50 flex items-center gap-1.5">
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 flex items-center gap-1.5 ${
+                  hasIntel
+                    ? 'text-gray-600 border border-gray-200 hover:bg-gray-50'
+                    : 'bg-brand text-white hover:bg-brand-dark'
+                }`}>
                 {analyzing ? (
                   <>
                     <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -126,9 +129,8 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
                     </svg>
                     Analyzing...
                   </>
-                ) : 'Run Intelligence Analysis'}
+                ) : hasIntel ? 'Re-analyze' : 'Run Analysis'}
               </button>
-            )}
             <button onClick={handleDelete}
               className="p-1.5 text-gray-300 hover:text-red-500 transition-colors" title="Delete competitor">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

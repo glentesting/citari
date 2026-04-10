@@ -21,6 +21,7 @@ export default function CompetitorsPage() {
   const [comparisons, setComparisons] = useState<PromptComparison[]>([])
   const [loading, setLoading] = useState(true)
   const [discovering, setDiscovering] = useState(false)
+  const [reanalyzingAll, setReanalyzingAll] = useState(false)
   const supabase = createClient()
 
   async function handleDiscover() {
@@ -47,6 +48,34 @@ export default function CompetitorsPage() {
       }
     } catch (e) { console.error('Competitor discovery failed:', e) }
     setDiscovering(false)
+  }
+
+  async function handleReanalyzeAll() {
+    if (!activeClient || reanalyzingAll) return
+    setReanalyzingAll(true)
+    try {
+      // Clear existing intel so it gets regenerated
+      const { data: comps } = await supabase.from('competitors')
+        .select('id')
+        .eq('client_id', activeClient.id)
+
+      for (const comp of (comps || [])) {
+        await supabase.from('competitors').update({
+          intel_brief: null, why_winning: null, content_gaps: null, visibility_score: null,
+        }).eq('id', comp.id)
+      }
+
+      // Trigger enrich for all
+      await fetch('/api/clients/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: activeClient.id }),
+      })
+    } catch (e) {
+      console.error('Re-analyze all failed:', e)
+    }
+    setReanalyzingAll(false)
+    fetchData()
   }
 
   const fetchData = useCallback(async () => {
@@ -155,6 +184,24 @@ export default function CompetitorsPage() {
             {/* Competitor Intel Cards */}
             {competitors.length > 0 && (
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="w-[2.5px] h-4 bg-brand rounded-full" />
+                    Competitor Intelligence
+                  </h3>
+                  <button onClick={handleReanalyzeAll} disabled={reanalyzingAll}
+                    className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 flex items-center gap-1.5">
+                    {reanalyzingAll ? (
+                      <>
+                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Re-analyzing all...
+                      </>
+                    ) : 'Re-analyze All'}
+                  </button>
+                </div>
                 {competitors.map((comp) => (
                   <CompetitorIntelCard
                     key={comp.id}
