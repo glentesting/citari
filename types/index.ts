@@ -14,6 +14,10 @@ export interface Competitor {
   client_id: string
   name: string
   domain: string | null
+  intel_brief: string | null
+  why_winning: string | null
+  content_gaps: string | null
+  visibility_score: number | null
   created_at: string
 }
 
