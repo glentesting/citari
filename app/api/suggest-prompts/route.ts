@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
-import { buildClientContext } from '@/lib/utils'
+import { buildClientContext, fetchWithTimeout } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -72,25 +72,64 @@ export async function POST(request: Request) {
 
   const existingTexts = (existingPrompts || []).map((p) => p.text.toLowerCase())
 
+  // Discover real buyer questions via Serper People Also Ask
+  let paaQuestions: string[] = []
+  const serperKey = process.env.SERPER_API_KEY
+  if (serperKey) {
+    const industry = client.specialization || client.industry || client.name
+    const location = client.location || ''
+    const seedQueries = [
+      `${industry} ${location}`.trim(),
+      `best ${industry} near me`,
+      `how to choose ${industry}`,
+    ]
+
+    for (const q of seedQueries.slice(0, 2)) {
+      try {
+        const res = await fetchWithTimeout('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q, gl: 'us', hl: 'en', num: 5 }),
+          timeoutMs: 8000,
+        })
+        if (res.ok) {
+          const data = await res.json()
+          for (const paa of (data.peopleAlsoAsk || [])) {
+            if (paa.question && !existingTexts.includes(paa.question.toLowerCase())) {
+              paaQuestions.push(paa.question)
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Serper PAA fetch failed:', e)
+      }
+    }
+    paaQuestions = [...new Set(paaQuestions)].slice(0, 10)
+  }
+
+  const paaContext = paaQuestions.length > 0
+    ? `\n\nREAL BUYER QUESTIONS from Google "People Also Ask" (incorporate these — they are proven search queries):\n${paaQuestions.map((q) => `- "${q}"`).join('\n')}`
+    : ''
+
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const systemPrompt = `You are an AI visibility strategist. Given detailed business context and a list of competitors, generate the 15 most important prompts that BUYERS in this specific category are asking AI models like ChatGPT, Claude, and Gemini when researching solutions.
+  const systemPrompt = `You are an AI visibility strategist. Generate the 15 most important prompts that BUYERS ask AI models when researching this type of business.
 
-CRITICAL: The prompts MUST be specific to this business's exact specialization, services, and location. Do NOT generate generic industry prompts. Every prompt should reflect what a real potential client of THIS specific business would type.
+CRITICAL: Prompts MUST be specific to this business's exact specialization, services, and location. Do NOT generate generic industry prompts. If real buyer questions from Google are provided, prioritize adapting those — they represent proven search demand.
 
 Distribute across:
 - 6 awareness prompts ("what is...", "how does...", "best practices for...")
 - 6 evaluation prompts ("best [specific category] for...", "[company] vs [competitor]", "alternatives to...")
 - 3 purchase prompts ("[company] pricing", "[company] reviews", "is [company] worth it")
 
-Return ONLY valid JSON in this exact format:
-{"prompts": [{"text": "...", "category": "awareness|evaluation|purchase", "reasoning": "..."}]}`
+Return ONLY valid JSON:
+{"prompts": [{"text": "...", "category": "awareness|evaluation|purchase", "reasoning": "...", "source": "ai_generated|people_also_ask"}]}`
 
   const userPrompt = `Business: ${clientContext}
 Domain: ${client.domain || 'Not provided'}
-Competitors: ${competitorNames.length > 0 ? competitorNames.join(', ') : 'None specified'}
+Competitors: ${competitorNames.length > 0 ? competitorNames.join(', ') : 'None specified'}${paaContext}
 
-Generate 15 tracking prompts for this specific business. Every prompt must be relevant to their exact specialization and location.`
+Generate 15 tracking prompts. Prioritize real buyer questions if provided.`
 
   const response = await anthropic.messages.create({
     model: MODELS.haiku,
