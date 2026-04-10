@@ -16,13 +16,13 @@ export async function GET() {
   // 2. Test Supabase connection
   try {
     const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data, error } = await admin.from('clients').select('id, name').limit(3)
+    const { data, error } = await admin.from('clients').select('id, name, domain, industry, specialization, location, description, target_clients, differentiators').limit(3)
     if (error) {
       log.push(`Supabase query ERROR: ${error.message}`)
     } else {
       log.push(`Supabase OK: ${(data || []).length} clients found`)
       for (const c of (data || [])) {
-        log.push(`  - Client: ${c.name} (${c.id})`)
+        log.push(`  - Client: ${JSON.stringify(c)}`)
       }
     }
 
