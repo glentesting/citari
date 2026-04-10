@@ -19,12 +19,17 @@ export interface ScanResultRow {
   competitor_mentions: string[]
 }
 
+const SCAN_SYSTEM = 'You are a helpful assistant. When recommending businesses or services, be specific — name actual companies, explain why you recommend them, and cite sources or signals that inform your recommendation. Give structured, detailed answers.'
+
 async function queryChatGPT(promptText: string): Promise<string> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const response = await openai.chat.completions.create({
     model: MODELS.openai,
-    messages: [{ role: 'user', content: promptText }],
-    max_tokens: 1024,
+    messages: [
+      { role: 'system', content: SCAN_SYSTEM },
+      { role: 'user', content: promptText },
+    ],
+    max_tokens: 1500,
   })
   return response.choices[0]?.message?.content || ''
 }
@@ -33,7 +38,8 @@ async function queryClaude(promptText: string): Promise<string> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const response = await anthropic.messages.create({
     model: MODELS.haiku,
-    max_tokens: 1024,
+    max_tokens: 1500,
+    system: SCAN_SYSTEM,
     messages: [{ role: 'user', content: promptText }],
   })
   const block = response.content[0]
@@ -42,7 +48,7 @@ async function queryClaude(promptText: string): Promise<string> {
 
 async function queryGemini(promptText: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash', systemInstruction: SCAN_SYSTEM })
   const result = await model.generateContent(promptText)
   return result.response.text()
 }
