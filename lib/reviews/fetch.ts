@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 export interface ReviewData {
   platform: string
   rating: number
@@ -11,9 +13,9 @@ export async function fetchYelpReviews(businessId: string): Promise<ReviewData[]
   if (!apiKey) return []
 
   try {
-    const res = await fetch(`https://api.yelp.com/v3/businesses/${businessId}/reviews?limit=20&sort_by=newest`, {
+    const res = await fetchWithTimeout(`https://api.yelp.com/v3/businesses/${businessId}/reviews?limit=20&sort_by=newest`, {
       headers: { Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const data = await res.json()
@@ -36,9 +38,9 @@ export async function fetchYelpBusinessId(businessName: string, location: string
   if (!apiKey) return null
 
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(businessName)}&location=${encodeURIComponent(location)}&limit=1`,
-      { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(10000) }
+      { headers: { Authorization: `Bearer ${apiKey}` }, timeoutMs: 10000 }
     )
     if (!res.ok) return null
     const data = await res.json()
@@ -54,9 +56,9 @@ export async function fetchYelpBusinessId(businessName: string, location: string
  */
 export async function fetchG2Reviews(productSlug: string): Promise<ReviewData[]> {
   try {
-    const res = await fetch(`https://www.g2.com/products/${productSlug}/reviews`, {
+    const res = await fetchWithTimeout(`https://www.g2.com/products/${productSlug}/reviews`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const html = await res.text()

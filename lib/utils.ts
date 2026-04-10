@@ -37,6 +37,18 @@ export function buildClientContext(client: {
 }
 
 /**
+ * Create an AbortSignal that times out after ms milliseconds.
+ * Uses AbortController + setTimeout instead of AbortSignal.timeout()
+ * which is deprecated in Node 24+ and crashes on Vercel.
+ */
+export function fetchWithTimeout(url: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
+  const { timeoutMs = 10000, ...fetchOptions } = options
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...fetchOptions, signal: controller.signal }).finally(() => clearTimeout(timeout))
+}
+
+/**
  * Safe fetch + JSON parse. Returns parsed data or throws with a readable error.
  */
 export async function safeFetchJson(url: string, options: RequestInit): Promise<any> {

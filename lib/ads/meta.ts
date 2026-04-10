@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 /**
  * Meta Ad Library API
  * Requires META_AD_LIBRARY_TOKEN from developers.facebook.com
@@ -27,9 +29,9 @@ export async function fetchMetaAds(searchTerm: string): Promise<MetaAd[]> {
       limit: '20',
     })
 
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://graph.facebook.com/v18.0/ads_archive?${params.toString()}`,
-      { signal: AbortSignal.timeout(15000) }
+      { timeoutMs: 15000 }
     )
 
     if (!res.ok) return []

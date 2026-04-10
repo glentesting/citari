@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { fetchWithTimeout } from '@/lib/utils'
 
 export async function POST(request: Request) {
   const cookieStore = cookies()
@@ -26,9 +27,9 @@ export async function POST(request: Request) {
 
   // Test connection
   try {
-    const res = await fetch('https://api.godaddy.com/v1/domains?limit=1', {
+    const res = await fetchWithTimeout('https://api.godaddy.com/v1/domains?limit=1', {
       headers: { Authorization: `sso-key ${api_key}:${api_secret}` },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return NextResponse.json({ error: 'Invalid GoDaddy credentials' }, { status: 400 })
   } catch (e) {

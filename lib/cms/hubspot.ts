@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 interface HubSpotConnection {
   access_token: string
 }
@@ -6,7 +8,7 @@ export async function createHubSpotBlogPost(
   connection: HubSpotConnection,
   post: { title: string; content: string; slug: string; metaDescription: string }
 ): Promise<{ post_id: string; url: string }> {
-  const res = await fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
+  const res = await fetchWithTimeout('https://api.hubapi.com/cms/v3/blogs/posts', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${connection.access_token}`,
@@ -19,7 +21,7 @@ export async function createHubSpotBlogPost(
       metaDescription: post.metaDescription,
       state: 'DRAFT',
     }),
-    signal: AbortSignal.timeout(15000),
+    timeoutMs: 15000,
   })
 
   if (!res.ok) {
@@ -38,9 +40,9 @@ export async function getHubSpotBlogs(
   connection: HubSpotConnection
 ): Promise<{ id: string; name: string }[]> {
   try {
-    const res = await fetch('https://api.hubapi.com/cms/v3/blogs/posts?limit=1', {
+    const res = await fetchWithTimeout('https://api.hubapi.com/cms/v3/blogs/posts?limit=1', {
       headers: { Authorization: `Bearer ${connection.access_token}` },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     return [{ id: 'default', name: 'Blog' }]
@@ -52,8 +54,8 @@ export async function getHubSpotBlogs(
 
 export async function testHubSpotConnection(accessToken: string): Promise<boolean> {
   try {
-    const res = await fetch('https://api.hubapi.com/oauth/v1/access-tokens/' + accessToken, {
-      signal: AbortSignal.timeout(10000),
+    const res = await fetchWithTimeout('https://api.hubapi.com/oauth/v1/access-tokens/' + accessToken, {
+      timeoutMs: 10000,
     })
     return res.ok
   } catch (e) {

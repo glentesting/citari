@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { fetchWithTimeout } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -44,9 +45,9 @@ export async function POST(request: Request) {
 
   for (const url of pagesToCheck) {
     try {
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' },
-        signal: AbortSignal.timeout(10000),
+        timeoutMs: 10000,
         redirect: 'follow',
       })
       if (!res.ok) continue

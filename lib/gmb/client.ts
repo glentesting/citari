@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 export interface GMBLocation {
   name: string
   locationId: string
@@ -26,18 +28,18 @@ export interface GMBInsights {
 
 export async function getGMBLocations(accessToken: string): Promise<GMBLocation[]> {
   try {
-    const accountsRes = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', {
+    const accountsRes = await fetchWithTimeout('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', {
       headers: { Authorization: `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!accountsRes.ok) return []
     const accounts = await accountsRes.json()
     const accountName = accounts.accounts?.[0]?.name
     if (!accountName) return []
 
-    const locationsRes = await fetch(
+    const locationsRes = await fetchWithTimeout(
       `https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title,storefrontAddress,phoneNumbers,websiteUri,categories,metadata`,
-      { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(10000) }
+      { headers: { Authorization: `Bearer ${accessToken}` }, timeoutMs: 10000 }
     )
     if (!locationsRes.ok) return []
     const locData = await locationsRes.json()
@@ -60,9 +62,9 @@ export async function getGMBLocations(accessToken: string): Promise<GMBLocation[
 
 export async function getGMBReviews(accessToken: string, locationName: string): Promise<GMBReview[]> {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://mybusiness.googleapis.com/v4/${locationName}/reviews`,
-      { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(10000) }
+      { headers: { Authorization: `Bearer ${accessToken}` }, timeoutMs: 10000 }
     )
     if (!res.ok) return []
     const data = await res.json()

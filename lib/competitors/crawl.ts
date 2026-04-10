@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 const MAX_PAGES = 8
 const FETCH_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' }
 
@@ -20,9 +22,9 @@ export async function crawlCompetitorSitemap(domain: string): Promise<string[]> 
   for (const path of commonPaths) {
     for (const prefix of [`https://${domain}`, `https://www.${domain}`]) {
       try {
-        const res = await fetch(`${prefix}${path}`, {
+        const res = await fetchWithTimeout(`${prefix}${path}`, {
           headers: FETCH_HEADERS,
-          signal: AbortSignal.timeout(8000),
+          timeoutMs: 8000,
           redirect: 'follow',
         })
         if (res.ok) {
@@ -59,9 +61,9 @@ async function trySitemap(domain: string): Promise<string[]> {
 
   for (const url of candidates) {
     try {
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         headers: FETCH_HEADERS,
-        signal: AbortSignal.timeout(10000),
+        timeoutMs: 10000,
         redirect: 'follow',
       })
 
@@ -96,9 +98,9 @@ async function trySitemap(domain: string): Promise<string[]> {
 
 async function fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
   try {
-    const res = await fetch(sitemapUrl, {
+    const res = await fetchWithTimeout(sitemapUrl, {
       headers: FETCH_HEADERS,
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
       redirect: 'follow',
     })
     if (!res.ok) return []
@@ -149,9 +151,9 @@ async function scrapeHomepageLinks(domain: string): Promise<string[]> {
 
   for (const homeUrl of homeUrls) {
     try {
-      const res = await fetch(homeUrl, {
+      const res = await fetchWithTimeout(homeUrl, {
         headers: FETCH_HEADERS,
-        signal: AbortSignal.timeout(10000),
+        timeoutMs: 10000,
         redirect: 'follow',
       })
 
@@ -240,9 +242,9 @@ export interface PageContent {
  */
 export async function fetchPageContent(url: string): Promise<PageContent | null> {
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: FETCH_HEADERS,
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
       redirect: 'follow',
     })
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
+import { fetchWithTimeout } from '@/lib/utils'
 
 export const maxDuration = 30
 
@@ -15,9 +16,9 @@ export async function POST(request: Request) {
   let pageTitle = cleanDomain
   for (const prefix of [`https://${cleanDomain}`, `https://www.${cleanDomain}`]) {
     try {
-      const res = await fetch(prefix, {
+      const res = await fetchWithTimeout(prefix, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' },
-        signal: AbortSignal.timeout(8000),
+        timeoutMs: 8000,
         redirect: 'follow',
       })
       if (!res.ok) continue

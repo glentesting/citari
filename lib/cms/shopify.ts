@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 interface ShopifyConnection {
   site_url: string // e.g. "mystore.myshopify.com"
   access_token: string
@@ -7,9 +9,9 @@ export async function getShopifyBlogs(
   connection: ShopifyConnection
 ): Promise<{ id: number; title: string }[]> {
   try {
-    const res = await fetch(`https://${connection.site_url}/admin/api/2024-01/blogs.json`, {
+    const res = await fetchWithTimeout(`https://${connection.site_url}/admin/api/2024-01/blogs.json`, {
       headers: { 'X-Shopify-Access-Token': connection.access_token },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const data = await res.json()
@@ -25,7 +27,7 @@ export async function createShopifyArticle(
   blogId: number,
   article: { title: string; body_html: string; author: string; tags: string }
 ): Promise<{ article_id: string; url: string }> {
-  const res = await fetch(`https://${connection.site_url}/admin/api/2024-01/blogs/${blogId}/articles.json`, {
+  const res = await fetchWithTimeout(`https://${connection.site_url}/admin/api/2024-01/blogs/${blogId}/articles.json`, {
     method: 'POST',
     headers: {
       'X-Shopify-Access-Token': connection.access_token,
@@ -40,7 +42,7 @@ export async function createShopifyArticle(
         published: false,
       },
     }),
-    signal: AbortSignal.timeout(15000),
+    timeoutMs: 15000,
   })
 
   if (!res.ok) {
@@ -58,9 +60,9 @@ export async function createShopifyArticle(
 
 export async function testShopifyConnection(siteUrl: string, accessToken: string): Promise<boolean> {
   try {
-    const res = await fetch(`https://${siteUrl}/admin/api/2024-01/shop.json`, {
+    const res = await fetchWithTimeout(`https://${siteUrl}/admin/api/2024-01/shop.json`, {
       headers: { 'X-Shopify-Access-Token': accessToken },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     return res.ok
   } catch (e) {

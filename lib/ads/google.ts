@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 /**
  * Google Ads Transparency Center API
  * Public API — no key required.
@@ -20,12 +22,12 @@ export async function fetchGoogleAds(domain: string): Promise<GoogleAd[]> {
   try {
     const url = `https://adstransparency.google.com/advertiser/${encodeURIComponent(domain)}`
 
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         Accept: 'text/html',
       },
-      signal: AbortSignal.timeout(15000),
+      timeoutMs: 15000,
     })
 
     if (!res.ok) return []

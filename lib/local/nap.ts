@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 export interface NAPCheck {
   directory: string
   listed_name: string | null
@@ -48,11 +50,11 @@ export async function checkNAPConsistency(
     }
 
     try {
-      const res = await fetch('https://google.serper.dev/search', {
+      const res = await fetchWithTimeout('https://google.serper.dev/search', {
         method: 'POST',
         headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ q: dir.query, gl: 'us', hl: 'en', num: 3 }),
-        signal: AbortSignal.timeout(10000),
+        timeoutMs: 10000,
       })
 
       if (!res.ok) {

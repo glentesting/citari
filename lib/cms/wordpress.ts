@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 interface CMSConnection {
   site_url: string
   access_token: string // base64 encoded "username:application_password"
@@ -30,9 +32,9 @@ function getApiBase(connection: CMSConnection): string {
 
 export async function testWordPressConnection(connection: CMSConnection): Promise<boolean> {
   try {
-    const res = await fetch(`${getApiBase(connection)}/users/me`, {
+    const res = await fetchWithTimeout(`${getApiBase(connection)}/users/me`, {
       headers: { Authorization: getAuthHeader(connection) },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     return res.ok
   } catch (e) {
@@ -47,7 +49,7 @@ export async function createWordPressDraft(
 ): Promise<{ post_id: string; post_url: string }> {
   const html = markdownToHtml(content.content)
 
-  const res = await fetch(`${getApiBase(connection)}/posts`, {
+  const res = await fetchWithTimeout(`${getApiBase(connection)}/posts`, {
     method: 'POST',
     headers: {
       Authorization: getAuthHeader(connection),
@@ -58,7 +60,7 @@ export async function createWordPressDraft(
       content: html,
       status: content.status,
     }),
-    signal: AbortSignal.timeout(15000),
+    timeoutMs: 15000,
   })
 
   if (!res.ok) {
@@ -82,14 +84,14 @@ export async function updateWordPressPost(
   if (content.title) body.title = content.title
   if (content.content) body.content = markdownToHtml(content.content)
 
-  const res = await fetch(`${getApiBase(connection)}/posts/${postId}`, {
+  const res = await fetchWithTimeout(`${getApiBase(connection)}/posts/${postId}`, {
     method: 'POST',
     headers: {
       Authorization: getAuthHeader(connection),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15000),
+    timeoutMs: 15000,
   })
 
   if (!res.ok) throw new Error(`WordPress update failed: ${res.status}`)
@@ -99,9 +101,9 @@ export async function getWordPressCategories(
   connection: CMSConnection
 ): Promise<{ id: number; name: string }[]> {
   try {
-    const res = await fetch(`${getApiBase(connection)}/categories?per_page=50`, {
+    const res = await fetchWithTimeout(`${getApiBase(connection)}/categories?per_page=50`, {
       headers: { Authorization: getAuthHeader(connection) },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const data = await res.json()
@@ -116,9 +118,9 @@ export async function getWordPressTags(
   connection: CMSConnection
 ): Promise<{ id: number; name: string }[]> {
   try {
-    const res = await fetch(`${getApiBase(connection)}/tags?per_page=50`, {
+    const res = await fetchWithTimeout(`${getApiBase(connection)}/tags?per_page=50`, {
       headers: { Authorization: getAuthHeader(connection) },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const data = await res.json()

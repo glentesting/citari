@@ -183,20 +183,36 @@ export async function POST(request: Request) {
       if (discoveredKws.length > 0) {
         const keywordRows = []
         for (const kw of discoveredKws) {
-          const result = await searchKeyword(kw, client.domain, compDomains)
-          keywordRows.push({
-            client_id,
-            keyword: kw,
-            category: 'category' as const,
-            monthly_volume: result.monthlyVolume,
-            your_rank: result.position,
-            top_competitor_name: result.topCompetitorName,
-            top_competitor_rank: result.topCompetitorRank,
-            ai_visible: 'no' as const,
-          })
+          try {
+            const result = await searchKeyword(kw, client.domain, compDomains)
+            keywordRows.push({
+              client_id,
+              keyword: kw,
+              category: 'category' as const,
+              monthly_volume: result.monthlyVolume,
+              your_rank: result.position,
+              top_competitor_name: result.topCompetitorName,
+              top_competitor_rank: result.topCompetitorRank,
+              ai_visible: 'no' as const,
+            })
+          } catch (kwErr: any) {
+            // One keyword failing shouldn't kill the whole step
+            keywordRows.push({
+              client_id,
+              keyword: kw,
+              category: 'category' as const,
+              monthly_volume: null,
+              your_rank: null,
+              top_competitor_name: null,
+              top_competitor_rank: null,
+              ai_visible: 'no' as const,
+            })
+          }
         }
-        await admin.from('keywords').insert(keywordRows)
-        steps.push(`Added ${keywordRows.length} keywords`)
+        if (keywordRows.length > 0) {
+          await admin.from('keywords').insert(keywordRows)
+          steps.push(`Added ${keywordRows.length} keywords`)
+        }
       }
     }
   } catch (e: any) {

@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 interface WebflowConnection {
   access_token: string
   site_id: string
@@ -5,9 +7,9 @@ interface WebflowConnection {
 
 export async function getWebflowSites(accessToken: string): Promise<{ id: string; name: string }[]> {
   try {
-    const res = await fetch('https://api.webflow.com/v2/sites', {
+    const res = await fetchWithTimeout('https://api.webflow.com/v2/sites', {
       headers: { Authorization: `Bearer ${accessToken}`, accept: 'application/json' },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const data = await res.json()
@@ -23,9 +25,9 @@ export async function getWebflowCollections(
   siteId: string
 ): Promise<{ id: string; name: string; slug: string }[]> {
   try {
-    const res = await fetch(`https://api.webflow.com/v2/sites/${siteId}/collections`, {
+    const res = await fetchWithTimeout(`https://api.webflow.com/v2/sites/${siteId}/collections`, {
       headers: { Authorization: `Bearer ${accessToken}`, accept: 'application/json' },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     if (!res.ok) return []
     const data = await res.json()
@@ -41,7 +43,7 @@ export async function createWebflowItem(
   collectionId: string,
   item: { name: string; slug: string; postBody: string }
 ): Promise<{ item_id: string; slug: string }> {
-  const res = await fetch(`https://api.webflow.com/v2/collections/${collectionId}/items`, {
+  const res = await fetchWithTimeout(`https://api.webflow.com/v2/collections/${collectionId}/items`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -57,7 +59,7 @@ export async function createWebflowItem(
         'post-body': item.postBody,
       },
     }),
-    signal: AbortSignal.timeout(15000),
+    timeoutMs: 15000,
   })
 
   if (!res.ok) {
@@ -71,10 +73,10 @@ export async function createWebflowItem(
 
 export async function testWebflowConnection(accessToken: string): Promise<boolean> {
   try {
-    const res = await fetch('https://api.webflow.com/v2/token/introspect', {
+    const res = await fetchWithTimeout('https://api.webflow.com/v2/token/introspect', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     return res.ok
   } catch (e) {

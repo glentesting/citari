@@ -1,4 +1,5 @@
 import { createHmac } from 'crypto'
+import { fetchWithTimeout } from '@/lib/utils'
 
 /**
  * Ghost Admin API uses JWT tokens signed with the Admin API key.
@@ -26,7 +27,7 @@ export async function createGhostPost(
   const token = createGhostToken(adminKey)
   const baseUrl = siteUrl.replace(/\/$/, '')
 
-  const res = await fetch(`${baseUrl}/ghost/api/admin/posts/?source=html`, {
+  const res = await fetchWithTimeout(`${baseUrl}/ghost/api/admin/posts/?source=html`, {
     method: 'POST',
     headers: {
       Authorization: `Ghost ${token}`,
@@ -40,7 +41,7 @@ export async function createGhostPost(
         tags: post.tags?.map((t) => ({ name: t })) || [],
       }],
     }),
-    signal: AbortSignal.timeout(15000),
+    timeoutMs: 15000,
   })
 
   if (!res.ok) {
@@ -60,9 +61,9 @@ export async function testGhostConnection(siteUrl: string, adminKey: string): Pr
   try {
     const token = createGhostToken(adminKey)
     const baseUrl = siteUrl.replace(/\/$/, '')
-    const res = await fetch(`${baseUrl}/ghost/api/admin/site/`, {
+    const res = await fetchWithTimeout(`${baseUrl}/ghost/api/admin/site/`, {
       headers: { Authorization: `Ghost ${token}` },
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
     return res.ok
   } catch (e) {

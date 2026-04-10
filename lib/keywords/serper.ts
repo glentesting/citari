@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/utils'
+
 const SERPER_API_URL = 'https://google.serper.dev/search'
 
 export interface SerperResult {
@@ -22,11 +24,11 @@ export async function searchKeyword(
   }
 
   try {
-    const res = await fetch(SERPER_API_URL, {
+    const res = await fetchWithTimeout(SERPER_API_URL, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ q: keyword, gl: 'us', hl: 'en', num: 20 }),
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 10000,
     })
 
     if (!res.ok) {
@@ -115,11 +117,11 @@ export async function discoverKeywords(
   // Search a couple seeds to get People Also Ask keywords
   for (const q of seeds.slice(0, 2)) {
     try {
-      const res = await fetch(SERPER_API_URL, {
+      const res = await fetchWithTimeout(SERPER_API_URL, {
         method: 'POST',
         headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ q, gl: 'us', hl: 'en' }),
-        signal: AbortSignal.timeout(10000),
+        timeoutMs: 10000,
       })
 
       if (!res.ok) continue
