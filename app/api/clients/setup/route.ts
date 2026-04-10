@@ -54,7 +54,40 @@ export async function POST(request: Request) {
 
     if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-    console.log('Setup running for:', client.name)
+    // If profile is empty, run domain analysis first
+    if (!client.specialization && !client.description && client.domain) {
+      console.log('Empty profile detected — running domain analysis for:', client.domain)
+      try {
+        const { fetchWithTimeout } = await import('@/lib/utils')
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://citari.vercel.app'
+        const analyzeRes = await fetchWithTimeout(`${baseUrl}/api/clients/analyze-domain`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: client.domain }),
+          timeoutMs: 15000,
+        })
+        if (analyzeRes.ok) {
+          const profile = await analyzeRes.json()
+          const updateData: Record<string, string | null> = {}
+          if (profile.industry) updateData.industry = profile.industry
+          if (profile.specialization) updateData.specialization = profile.specialization
+          if (profile.location) updateData.location = profile.location
+          if (profile.description) updateData.description = profile.description
+          if (profile.target_clients) updateData.target_clients = profile.target_clients
+          if (profile.differentiators) updateData.differentiators = profile.differentiators
+
+          if (Object.keys(updateData).length > 0) {
+            await admin.from('clients').update(updateData).eq('id', client_id)
+            Object.assign(client, updateData)
+            console.log('Profile auto-filled:', JSON.stringify(updateData))
+          }
+        }
+      } catch (e: any) {
+        console.error('Domain analysis in setup failed:', e.message)
+      }
+    }
+
+    console.log('Setup running for:', client.name, '| specialization:', client.specialization)
     const clientContext = buildClientContext(client)
     const steps: string[] = []
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
