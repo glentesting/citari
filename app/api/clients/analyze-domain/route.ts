@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
-import { fetchPageContent } from '@/lib/competitors/crawl'
 
 export const maxDuration = 30
 
@@ -11,54 +10,70 @@ export async function POST(request: Request) {
 
   const cleanDomain = domain.replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, '')
 
-  // Crawl homepage
-  let homePage = await fetchPageContent(`https://${cleanDomain}`)
-  if (!homePage) homePage = await fetchPageContent(`https://www.${cleanDomain}`)
-  if (!homePage) {
+  // Fetch homepage only — fast, no subpage crawling
+  let html = ''
+  let pageTitle = cleanDomain
+  for (const prefix of [`https://${cleanDomain}`, `https://www.${cleanDomain}`]) {
+    try {
+      const res = await fetch(prefix, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' },
+        signal: AbortSignal.timeout(8000),
+        redirect: 'follow',
+      })
+      if (!res.ok) continue
+      html = await res.text()
+
+      const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i)
+      if (titleMatch) pageTitle = titleMatch[1].replace(/\s+/g, ' ').trim()
+      break
+    } catch {
+      continue
+    }
+  }
+
+  if (!html) {
     return NextResponse.json({ error: 'Could not access website' }, { status: 404 })
   }
 
-  // Crawl subpages in parallel for richer context
-  const subpages = ['/about', '/services', '/practice-areas', '/what-we-do', '/our-team']
-  const base = new URL(homePage.url).origin
-  const subResults = await Promise.all(
-    subpages.map((path) => fetchPageContent(`${base}${path}`).catch(() => null))
-  )
-
-  let allContent = `PAGE: ${homePage.title}\n${homePage.excerpt}\n\n`
-  for (const page of subResults) {
-    if (page) {
-      allContent += `PAGE: ${page.title}\n${page.excerpt.slice(0, 800)}\n\n`
-    }
-  }
+  // Strip to text content — fast extraction, no heavy parsing
+  const text = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 4000)
 
   // Analyze with Claude
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const response = await anthropic.messages.create({
-      model: MODELS.sonnet,
-      max_tokens: 1024,
+      model: MODELS.haiku,
+      max_tokens: 512,
       system: `You are a business intelligence analyst. Analyze this website content and extract a complete business profile. Return ONLY valid JSON:
 {
-  "name": "string",
-  "description": "string (2-3 sentences, what they do and who they serve)",
-  "specialization": "string (their specific niche or practice areas, comma separated)",
-  "location": "string (all locations/states they serve, comma separated)",
-  "target_clients": "string (who their ideal customers are)",
-  "differentiators": "string (what makes them different from competitors)",
-  "industry": "string (one word or short phrase)"
+  "name": "business name",
+  "description": "2-3 sentences, what they do and who they serve",
+  "specialization": "specific niche or practice areas, comma separated",
+  "location": "all locations/states they serve, comma separated",
+  "target_clients": "who their ideal customers are",
+  "differentiators": "what makes them different",
+  "industry": "one word or short phrase"
 }
 
-If you cannot determine a field from the content, return an empty string for it. Do NOT guess or fabricate information not present in the content.`,
+Extract only what is clearly stated in the content. Return empty string for fields you cannot determine.`,
       messages: [{
         role: 'user',
-        content: `Domain: ${cleanDomain}\nWebsite title: ${homePage.title}\n\nWebsite content:\n${allContent.slice(0, 6000)}`,
+        content: `Domain: ${cleanDomain}\nTitle: ${pageTitle}\n\nContent:\n${text}`,
       }],
     })
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
-    const match = text.match(/\{[\s\S]*\}/)
+    const responseText = response.content[0].type === 'text' ? response.content[0].text : ''
+    const match = responseText.match(/\{[\s\S]*\}/)
     if (match) {
       const parsed = JSON.parse(match[0])
       return NextResponse.json({
