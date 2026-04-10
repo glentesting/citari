@@ -60,16 +60,16 @@ export async function generateCompetitorIntelligence(
   const response = await withTimeout(anthropic.messages.create({
     model: MODELS.sonnet,
     max_tokens: 3000,
-    system: `You are a senior competitive intelligence analyst. Your job is to explain exactly why a competitor is winning more customers than your client, and what to do about it. Be specific, direct, and ruthless. No fluff.
+    system: `You are a senior competitive intelligence analyst. Analyze the competitor and provide strategic intelligence. Use crawled website content if provided. If no content was crawled, use your knowledge of this competitor — they are a real company and you likely know about them. NEVER refuse to analyze. NEVER say you cannot complete the analysis. Always provide your best assessment.
 
 Return ONLY valid JSON:
 {
-  "why_winning": "string (3-4 sentences — the real reasons this competitor is getting more customers. Be specific. Reference their actual content and positioning)",
-  "content_gaps": "string (bullet list of specific topics the competitor covers that the client does not. Each bullet should start with '- ' and be one actionable content opportunity)",
-  "visibility_score": number 1-100 (estimated AI visibility strength based on their content depth, specificity, and authority signals),
-  "intel_brief": "string (the full written brief — 4-6 paragraphs. Written like a consultant report. Covers: who they are, why they're winning, where they show up in AI responses, what the client needs to do to compete. Specific, not generic. Reference actual content topics and positioning differences)",
-  "quick_wins": ["string (3-5 specific actions the client can take THIS WEEK to start competing. Each should be a concrete task, not vague advice)"],
-  "threat_level": "low | medium | high | critical (based on how directly they compete and how strong their presence is)"
+  "why_winning": "3-4 sentences on why this competitor attracts customers. Be specific about their positioning, reputation, and market presence.",
+  "content_gaps": "Bullet list starting with '- '. Each bullet is a specific topic or content type the client should create to compete. Give 5-7 actionable gaps.",
+  "visibility_score": 1-100 integer estimating their AI/search visibility strength,
+  "intel_brief": "A structured brief using these exact section headers on their own lines:\\n\\n## Overview\\n(Who they are, what they do)\\n\\n## Why They Win\\n(Their competitive advantages)\\n\\n## Where They Show Up\\n(Search, AI, directories, rankings)\\n\\n## What You Should Do\\n(3-5 specific recommendations for the client)",
+  "quick_wins": ["3-5 specific actions the client can take THIS WEEK. Concrete tasks, not vague advice."],
+  "threat_level": "low | medium | high | critical"
 }`,
     messages: [{
       role: 'user',

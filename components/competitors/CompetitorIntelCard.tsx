@@ -156,8 +156,15 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
         {/* Why they're winning */}
         {competitor.why_winning && (
           <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-            <p className="text-[10px] font-bold uppercase text-red-400 mb-1">Why they're winning</p>
-            <p className="text-sm text-red-900 leading-relaxed">{competitor.why_winning}</p>
+            <p className="text-[10px] font-bold uppercase text-red-400 mb-2">Why they're winning</p>
+            <ul className="space-y-1.5">
+              {competitor.why_winning.split(/(?<=[.!])\s+/).filter((s) => s.trim().length > 10).map((sentence, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-red-900">
+                  <span className="text-red-400 mt-1 text-[8px]">&#9679;</span>
+                  <span>{sentence.trim()}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -181,10 +188,29 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
             {tab === 'brief' && (
               <div className="space-y-4">
                 {competitor.intel_brief && (
-                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                    {competitor.intel_brief.split('\n\n').map((para, i) => (
-                      <p key={i} className="mb-3 text-sm">{para}</p>
-                    ))}
+                  <div className="max-w-none space-y-3">
+                    {competitor.intel_brief.split('\n').map((line, i) => {
+                      const trimmed = line.trim()
+                      if (!trimmed) return null
+                      if (trimmed.startsWith('## ')) {
+                        return <h3 key={i} className="text-sm font-bold text-gray-900 mt-4 mb-1 flex items-center gap-2">
+                          <span className="w-[2.5px] h-4 bg-brand rounded-full" />{trimmed.replace('## ', '')}
+                        </h3>
+                      }
+                      if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                        return <div key={i} className="flex items-start gap-2 ml-1">
+                          <span className="text-brand mt-1 text-xs">&#9679;</span>
+                          <p className="text-sm text-gray-600">{trimmed.replace(/^[-•]\s*/, '')}</p>
+                        </div>
+                      }
+                      if (trimmed.match(/^\d+\.\s/)) {
+                        return <div key={i} className="flex items-start gap-2 ml-1">
+                          <span className="text-xs font-bold text-brand mt-0.5 w-4">{trimmed.match(/^(\d+)\./)?.[1]}.</span>
+                          <p className="text-sm text-gray-600">{trimmed.replace(/^\d+\.\s*/, '')}</p>
+                        </div>
+                      }
+                      return <p key={i} className="text-sm text-gray-600 leading-relaxed">{trimmed}</p>
+                    })}
                   </div>
                 )}
 
