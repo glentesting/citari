@@ -11,7 +11,7 @@ interface NAPListing {
   listed_phone: string | null
   listed_website: string | null
   is_consistent: boolean
-  issues: string[]
+  issues: string[] | null
 }
 
 export default function NAPAudit() {
@@ -102,12 +102,23 @@ export default function NAPAudit() {
           {listings.map((l) => (
             <div key={l.id} className={`px-5 py-3 ${!l.is_consistent ? 'bg-red-50/50' : ''}`}>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">{l.directory}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">{l.directory}</span>
+                  {l.listed_website && (
+                    <a href={l.listed_website} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-brand hover:underline truncate max-w-[300px]">
+                      View listing
+                    </a>
+                  )}
+                </div>
                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${l.is_consistent ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                  {l.is_consistent ? 'Consistent' : 'Issues'}
+                  {l.is_consistent ? 'Consistent' : l.issues?.includes('Not found in this directory') ? 'Not found' : 'Issues'}
                 </span>
               </div>
-              {l.issues && l.issues.length > 0 && (
+              {l.listed_name && (
+                <p className="text-xs text-gray-500 mt-0.5">Listed as: {l.listed_name}</p>
+              )}
+              {l.issues && l.issues.length > 0 && !l.issues.includes('Not found in this directory') && (
                 <div className="mt-1">
                   {l.issues.map((issue, i) => (
                     <p key={i} className="text-xs text-red-600">• {issue}</p>

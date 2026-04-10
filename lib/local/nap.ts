@@ -28,11 +28,11 @@ export async function checkNAPConsistency(
   const results: NAPCheck[] = []
 
   const directories = [
-    { name: 'Google Business', query: `${clientNAP.name} google maps` },
-    { name: 'Yelp', query: `${clientNAP.name} yelp` },
-    { name: 'Facebook', query: `${clientNAP.name} facebook` },
-    { name: 'Apple Maps', query: `${clientNAP.name} apple maps` },
-    { name: 'Bing Places', query: `${clientNAP.name} bing maps` },
+    { name: 'Google Business', query: `site:google.com/maps "${clientNAP.name}"` },
+    { name: 'Yelp', query: `site:yelp.com "${clientNAP.name}"` },
+    { name: 'Facebook', query: `site:facebook.com "${clientNAP.name}"` },
+    { name: 'BBB', query: `site:bbb.org "${clientNAP.name}"` },
+    { name: 'Bing Places', query: `site:bing.com/maps "${clientNAP.name}"` },
   ]
 
   for (const dir of directories) {
