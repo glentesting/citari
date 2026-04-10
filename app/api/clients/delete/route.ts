@@ -33,6 +33,9 @@ export async function POST(request: Request) {
   const { data: workspace } = await admin.from('workspaces').select('owner_id').eq('id', client.workspace_id).single()
   if (workspace?.owner_id !== user.id) return NextResponse.json({ error: 'Not your client' }, { status: 403 })
 
+  // Clear any user_settings referencing this client as active
+  await admin.from('user_settings').update({ active_client_id: null }).eq('active_client_id', client_id)
+
   // Delete via service role (bypasses RLS)
   const { error } = await admin.from('clients').delete().eq('id', client_id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
