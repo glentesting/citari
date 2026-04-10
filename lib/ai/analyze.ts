@@ -1,6 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from './models'
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ])
+
 /**
  * Simple string-match helpers (still used as fast pre-checks).
  */
@@ -40,7 +48,6 @@ export function detectMentionPosition(
 
 /**
  * Claude-powered response quality analysis.
- * Replaces the old keyword-based sentiment detection.
  */
 export interface QualityAnalysis {
   mentionQuality: 'leading' | 'supporting' | 'mentioned' | 'not_mentioned'
@@ -56,46 +63,49 @@ export interface QualityAnalysis {
 export async function analyzeResponseQuality(
   responseText: string,
   brandName: string,
-  competitorNames: string[]
+  competitorNames: string[],
+  clientContext?: string
 ): Promise<QualityAnalysis> {
-  // Fast pre-check
   const isMentioned = detectBrandMention(responseText, brandName)
+  const mentionedCompetitors = detectCompetitorMentions(responseText, competitorNames)
 
-  if (!isMentioned && competitorNames.length === 0) {
-    return {
-      mentionQuality: 'not_mentioned',
-      mentionPosition: null,
-      authorityScore: 0,
-      recommendationStrength: 'none',
-      whyCompetitorWins: null,
-      citationSources: [],
-      citationSourceTypes: [],
-      sentiment: 'neutral',
-    }
-  }
-
+  // ALWAYS analyze with Claude — non-mentions are the most valuable data
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    const response = await anthropic.messages.create({
-      model: MODELS.haiku, // fast + cheap for analysis
-      max_tokens: 512,
-      system: `Analyze an AI model response for brand visibility quality. The brand is "${brandName}". Competitors: ${competitorNames.join(', ') || 'none specified'}.
+    const brandContext = clientContext
+      ? `\n\nBrand context: ${clientContext}`
+      : ''
 
-Return ONLY valid JSON with these fields:
-- mentionQuality: "leading" (first/primary recommendation), "supporting" (positive but not primary), "mentioned" (neutral reference), "not_mentioned"
-- mentionPosition: integer position among all brands mentioned (1=first, null if not mentioned)
-- authorityScore: 1-10 (10 = "the best solution is [brand]", 1 = barely mentioned)
-- recommendationStrength: "primary" (the top pick), "secondary" (a strong alternative), "alternative" (one of many options), "none"
-- whyCompetitorWins: one sentence explaining WHY a competitor is recommended over the brand, or null if brand leads
-- citationSources: array of source domains or platforms detected/implied in the response (e.g. "G2", "Forbes", "company website")
-- citationSourceTypes: array of types from: "own_website", "review_site", "press", "social", "directory", "academic"
-- sentiment: "positive", "neutral", "negative" toward the brand`,
+    const mentionStatus = isMentioned
+      ? `The brand IS mentioned in this response.`
+      : `The brand is NOT mentioned. ${mentionedCompetitors.length > 0 ? `But these competitors ARE: ${mentionedCompetitors.join(', ')}.` : ''} Analyze WHY the brand was excluded and who was recommended instead.`
+
+    const response = await withTimeout(anthropic.messages.create({
+      model: MODELS.haiku,
+      max_tokens: 800,
+      system: `You are analyzing an AI model's response for competitive brand visibility.
+
+Brand: "${brandName}"${brandContext}
+Competitors: ${competitorNames.join(', ') || 'none specified'}
+${mentionStatus}
+
+Return ONLY valid JSON:
+{
+  "mentionQuality": "leading" | "supporting" | "mentioned" | "not_mentioned",
+  "mentionPosition": integer (1=first brand mentioned, null if not mentioned),
+  "authorityScore": 1-10 (10=primary recommendation, 0=not mentioned at all),
+  "recommendationStrength": "primary" | "secondary" | "alternative" | "none",
+  "whyCompetitorWins": "2-3 sentences: Who was recommended instead? What specific advantage do they have? What content or authority signal gave them the edge? What should the brand do to compete on this query?" (null ONLY if brand is the primary recommendation),
+  "citationSources": ["source domains or platforms mentioned/implied"],
+  "citationSourceTypes": ["own_website" | "review_site" | "press" | "social" | "directory" | "academic"],
+  "sentiment": "positive" | "neutral" | "negative"
+}`,
       messages: [{
         role: 'user',
-        content: `Analyze this AI response:\n\n${responseText.slice(0, 2000)}`,
+        content: `Analyze this AI response (full text):\n\n${responseText}`,
       }],
-    })
+    }), 15000)
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const match = text.match(/\{[\s\S]*\}/)
@@ -113,17 +123,18 @@ Return ONLY valid JSON with these fields:
       }
     }
   } catch (e) {
-    // Claude analysis failed — fall back to simple detection
     console.error('Quality analysis failed:', e)
   }
 
-  // Fallback: use simple string matching
+  // Fallback: simple detection
   return {
     mentionQuality: isMentioned ? 'mentioned' : 'not_mentioned',
     mentionPosition: detectMentionPosition(responseText, brandName, competitorNames),
     authorityScore: isMentioned ? 5 : 0,
     recommendationStrength: isMentioned ? 'alternative' : 'none',
-    whyCompetitorWins: null,
+    whyCompetitorWins: !isMentioned && mentionedCompetitors.length > 0
+      ? `${mentionedCompetitors.join(', ')} mentioned instead of ${brandName}`
+      : null,
     citationSources: [],
     citationSourceTypes: [],
     sentiment: 'neutral',

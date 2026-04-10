@@ -54,7 +54,8 @@ async function queryGemini(promptText: string): Promise<string> {
 export async function scanPrompt(
   promptText: string,
   brandName: string,
-  competitorNames: string[]
+  competitorNames: string[],
+  clientContext?: string
 ): Promise<ScanResultRow[]> {
   const queries: { model: ScanResultRow['model']; fn: () => Promise<string> }[] = [
     { model: 'chatgpt', fn: () => queryChatGPT(promptText) },
@@ -90,10 +91,10 @@ export async function scanPrompt(
     }
 
     const responseText = response.value
-    const excerpt = responseText.slice(0, 500)
+    const excerpt = responseText.slice(0, 2000)
 
-    // Run Claude-powered quality analysis
-    const quality = await analyzeResponseQuality(responseText, brandName, competitorNames)
+    // Run Claude-powered quality analysis with full context
+    const quality = await analyzeResponseQuality(responseText, brandName, competitorNames, clientContext)
 
     results.push({
       model,
