@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { discoverKeywords, searchKeyword } from '@/lib/keywords/serper'
+import { searchKeyword } from '@/lib/keywords/serper'
 import { scanPrompt } from '@/lib/ai/scan'
 
 export const maxDuration = 120
@@ -111,11 +111,28 @@ export async function POST(request: Request) {
       const competitorDomains = (await admin.from('competitors').select('domain').eq('client_id', client_id)).data || []
       const compDomains = competitorDomains.map((c) => c.domain).filter(Boolean) as string[]
 
-      const discoveredKws = await discoverKeywords(client.domain, client.industry, client.name)
+      const anthropicKw = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const industry = client.industry || client.name
+      const kwRes = await anthropicKw.messages.create({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 1024,
+        system: `Generate 8 keywords that a POTENTIAL CLIENT would type into Google when searching for ${industry} services in their area. Focus exclusively on buyer-intent keywords — what someone types when they need to hire someone.\n\nFor a law firm: 'healthcare attorney near me', 'trademark lawyer Dallas', 'business lawyer for doctors'.\n\nDo NOT generate directory names, award sites, publication names, or industry association terms. Only real search queries from real potential clients.\n\nReturn ONLY valid JSON: {"keywords":["keyword1","keyword2",...]}`,
+        messages: [{ role: 'user', content: `Company: ${client.name}\nIndustry: ${industry}\nDomain: ${client.domain || 'N/A'}` }],
+      })
+
+      const kwText = kwRes.content[0].type === 'text' ? kwRes.content[0].text : ''
+      const kwMatch = kwText.match(/\{[\s\S]*\}/)
+      let discoveredKws: string[] = []
+      if (kwMatch) {
+        const parsed = JSON.parse(kwMatch[0])
+        if (Array.isArray(parsed.keywords)) {
+          discoveredKws = parsed.keywords.slice(0, 8)
+        }
+      }
 
       if (discoveredKws.length > 0) {
         const keywordRows = []
-        for (const kw of discoveredKws.slice(0, 10)) {
+        for (const kw of discoveredKws) {
           const result = await searchKeyword(kw, client.domain, compDomains)
           keywordRows.push({
             client_id,
