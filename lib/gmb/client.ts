@@ -85,16 +85,32 @@ export async function getGMBReviews(accessToken: string, locationName: string): 
 export async function generateGMBResponseTemplate(
   review: { rating: number; comment: string; author: string },
   businessName: string,
-  tone: 'professional' | 'friendly' | 'empathetic'
+  tone: 'professional' | 'friendly' | 'empathetic',
+  businessDescription?: string
 ): Promise<string> {
-  // Returns a template — Claude-powered response generation would be added via the existing AI infrastructure
-  if (review.rating >= 4) {
-    return `Thank you so much for your kind words, ${review.author}! We're thrilled to hear about your experience with ${businessName}. Your feedback means the world to our team. We look forward to serving you again!`
+  try {
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const { MODELS } = await import('@/lib/ai/models')
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+    const res = await anthropic.messages.create({
+      model: MODELS.haiku,
+      max_tokens: 300,
+      system: `Write a review response for ${businessName}. Tone: ${tone}. ${businessDescription ? `Business: ${businessDescription}.` : ''} Read the actual review and respond to what they specifically said. Be genuine, not templated. Keep it under 100 words. Do NOT use generic phrases like "your feedback means the world." Reference specific details from their review.`,
+      messages: [{
+        role: 'user',
+        content: `${review.rating}-star review from ${review.author}:\n"${review.comment}"`,
+      }],
+    })
+
+    return res.content[0].type === 'text' ? res.content[0].text : ''
+  } catch (e) {
+    console.error('GMB response generation failed:', e)
+    // Fallback to simple templates if Claude fails
+    if (review.rating >= 4) return `Thank you for your review, ${review.author}! We appreciate your kind words about ${businessName}.`
+    if (review.rating === 3) return `Thank you for your feedback, ${review.author}. We'd love to hear more about how we can improve.`
+    return `We're sorry to hear about your experience, ${review.author}. Please contact us directly so we can address your concerns.`
   }
-  if (review.rating === 3) {
-    return `Thank you for your feedback, ${review.author}. We appreciate you taking the time to share your experience with ${businessName}. We'd love to hear more about how we can improve — please feel free to reach out to us directly.`
-  }
-  return `We're sorry to hear about your experience, ${review.author}. This isn't the standard we hold ourselves to at ${businessName}. We'd like to make this right — please contact us directly so we can address your concerns.`
 }
 
 /**
