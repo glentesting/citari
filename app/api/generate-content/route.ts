@@ -121,11 +121,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'AI generation failed — please try again' }, { status: 502 })
   }
 
-  // Look up prompt_id by matching target_prompt text
-  let prompt_id: string | null = null
-  const { data: matchedPrompt } = await adminSupabase.from('prompts')
-    .select('id').eq('client_id', client_id).eq('text', target_prompt).limit(1).single()
-  if (matchedPrompt) prompt_id = matchedPrompt.id
+  // Use prompt_id from the earlier lookup (scan intelligence section)
+  const prompt_id: string | null = matchedPrompt?.id || null
 
   // Save to geo_content table
   const { data: saved, error: saveError } = await adminSupabase
