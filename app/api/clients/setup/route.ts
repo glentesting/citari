@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
 import { searchKeyword } from '@/lib/keywords/serper'
 import { crawlCompetitorSitemap, fetchPageContent } from '@/lib/competitors/crawl'
+import { generateCompetitorIntelligence } from '@/lib/competitors/intelligence'
 import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 120
@@ -204,46 +205,23 @@ export async function POST(request: Request) {
 
     for (const comp of (comps || [])) {
       try {
-        // Get crawled content for this competitor
         const { data: content } = await admin.from('competitor_content')
           .select('title, excerpt')
           .eq('competitor_id', comp.id)
           .limit(10)
 
-        const contentSummary = (content || [])
-          .map((c) => `${c.title}: ${c.excerpt.slice(0, 300)}`)
-          .join('\n\n')
+        const intel = await generateCompetitorIntelligence(
+          client,
+          { name: comp.name, domain: comp.domain },
+          content || []
+        )
 
-        const intelRes = await anthropic.messages.create({
-          model: MODELS.sonnet,
-          max_tokens: 2048,
-          system: `You are a senior competitive intelligence analyst. Your job is to explain exactly why a competitor is winning more customers than your client, and what to do about it. Be specific, direct, and ruthless. No fluff.
-
-Return ONLY valid JSON:
-{
-  "why_winning": "string (3-4 sentences — the real reasons this competitor is getting more customers. Be specific. Reference their actual content and positioning)",
-  "content_gaps": "string (bullet list of specific topics the competitor covers that the client does not. Each bullet = one actionable content opportunity)",
-  "visibility_score": number 1-100,
-  "intel_brief": "string (4-6 paragraphs. Written like a consultant report. Covers: who they are, why they're winning, where they show up, what the client needs to do. Specific, not generic)",
-  "threat_level": "low | medium | high | critical"
-}`,
-          messages: [{
-            role: 'user',
-            content: `CLIENT PROFILE:\n${clientContext}\nDomain: ${client.domain || 'N/A'}\n\nCOMPETITOR: ${comp.name}\nDomain: ${comp.domain || 'N/A'}\n\nCOMPETITOR CONTENT:\n${contentSummary.slice(0, 4000) || 'No content crawled'}`,
-          }],
-        })
-
-        const intelText = intelRes.content[0].type === 'text' ? intelRes.content[0].text : ''
-        const intelMatch = intelText.match(/\{[\s\S]*\}/)
-        if (intelMatch) {
-          const intel = JSON.parse(intelMatch[0])
-          await admin.from('competitors').update({
-            intel_brief: intel.intel_brief || null,
-            why_winning: intel.why_winning || null,
-            content_gaps: intel.content_gaps || null,
-            visibility_score: intel.visibility_score || null,
-          }).eq('id', comp.id)
-        }
+        await admin.from('competitors').update({
+          intel_brief: intel.intel_brief,
+          why_winning: intel.why_winning,
+          content_gaps: intel.content_gaps,
+          visibility_score: intel.visibility_score,
+        }).eq('id', comp.id)
       } catch (e: any) {
         console.error(`Intel analysis failed for ${comp.name}:`, e)
       }
