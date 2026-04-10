@@ -67,10 +67,15 @@ export default function BacklinkOpportunities() {
   }
 
   const [outreachId, setOutreachId] = useState<string | null>(null)
+  const [savedId, setSavedId] = useState<string | null>(null)
 
   async function updateStatus(id: string, status: string) {
-    await supabase.from('backlink_opportunities').update({ status }).eq('id', id)
-    setOpportunities((prev) => prev.map((o) => o.id === id ? { ...o, status } : o))
+    const { error } = await supabase.from('backlink_opportunities').update({ status }).eq('id', id)
+    if (!error) {
+      setOpportunities((prev) => prev.map((o) => o.id === id ? { ...o, status } : o))
+      setSavedId(id)
+      setTimeout(() => setSavedId((prev) => prev === id ? null : prev), 1500)
+    }
   }
 
   function getOutreachTemplate(domain: string, type: string) {
@@ -163,13 +168,18 @@ export default function BacklinkOpportunities() {
                     </div>
                   )}
                 </div>
-                <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)}
-                  className="text-xs border border-gray-200 rounded px-2 py-1 bg-white">
-                  <option value="identified">Identified</option>
-                  <option value="outreach_sent">Outreach Sent</option>
-                  <option value="acquired">Acquired</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <div className="flex items-center gap-1.5">
+                  <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)}
+                    className="text-xs border border-gray-200 rounded px-2 py-1 bg-white">
+                    <option value="identified">Identified</option>
+                    <option value="outreach_sent">Outreach Sent</option>
+                    <option value="acquired">Acquired</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  {savedId === o.id && (
+                    <span className="text-green-500 text-sm animate-pulse">✓</span>
+                  )}
+                </div>
               </div>
             )
           })}
