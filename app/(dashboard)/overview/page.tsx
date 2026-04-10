@@ -48,9 +48,29 @@ export default function OverviewPage() {
   const [setupStep, setSetupStep] = useState(0)
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [enriching, setEnriching] = useState(false)
+  const [enrichStepIdx, setEnrichStepIdx] = useState(0)
   const setupAttempted = useRef<string | null>(null)
   const supabase = createClient()
   const router = useRouter()
+
+  const enrichSteps = [
+    'Crawling competitor websites...',
+    'Extracting content and topics...',
+    'Analyzing competitive positioning...',
+    'Asking AI models about your competitors...',
+    'Generating intelligence briefs...',
+    'Identifying content gaps...',
+    'Almost done...',
+  ]
+
+  useEffect(() => {
+    if (!enriching) { setEnrichStepIdx(0); return }
+    const interval = setInterval(() => {
+      setEnrichStepIdx((i) => Math.min(i + 1, enrichSteps.length - 1))
+    }, 7000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enriching])
 
   // Auto-trigger setup if client has no competitors, then enrich after
   useEffect(() => {
@@ -445,7 +465,9 @@ export default function OverviewPage() {
       <PageHeader title="Overview" subtitle={activeClient.name} />
 
       <div className="mt-6 space-y-6">
-        {d.alertMessage && <AlertBanner message={d.alertMessage} />}
+        {d.alertMessage && !enriching && !isSettingUp && (
+          <AlertBanner message={d.alertMessage} />
+        )}
 
         {isSettingUp && (
           <div className="bg-brand-bg border border-brand-border rounded-xl px-5 py-3 flex items-center gap-3">
@@ -465,7 +487,7 @@ export default function OverviewPage() {
             <div className="w-4 h-4 rounded-full bg-brand animate-pulse flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-brand">Building competitive intelligence...</p>
-              <p className="text-xs text-brand/70">Crawling competitor websites and generating analysis. This runs in the background.</p>
+              <p className="text-xs text-brand/70 transition-all duration-500">{enrichSteps[enrichStepIdx]}</p>
             </div>
           </div>
         )}
