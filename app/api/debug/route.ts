@@ -59,17 +59,20 @@ export async function GET() {
     log.push(`Anthropic Haiku FAILED: ${e.message}`)
   }
 
-  try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const res = await anthropic.messages.create({
-      model: MODELS.sonnet,
-      max_tokens: 50,
-      messages: [{ role: 'user', content: 'Say "hello" and nothing else.' }],
-    })
-    const text = res.content[0].type === 'text' ? res.content[0].text : ''
-    log.push(`Anthropic Sonnet OK: "${text}"`)
-  } catch (e: any) {
-    log.push(`Anthropic Sonnet FAILED: ${e.message}`)
+  // Test specific model IDs to see what's available
+  for (const modelId of ['claude-sonnet-4-5-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-sonnet-latest']) {
+    try {
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const res = await anthropic.messages.create({
+        model: modelId,
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Say ok' }],
+      })
+      const text = res.content[0].type === 'text' ? res.content[0].text : ''
+      log.push(`${modelId}: OK ("${text}")`)
+    } catch (e: any) {
+      log.push(`${modelId}: FAILED (${e.message?.slice(0, 100)})`)
+    }
   }
 
   return NextResponse.json({ log })
