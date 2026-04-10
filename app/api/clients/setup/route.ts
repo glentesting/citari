@@ -44,6 +44,8 @@ export async function POST(request: Request) {
 
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
+  console.log('Setup starting for client:', client.name, '| domain:', client.domain, '| industry:', client.industry)
+
   const clientContext = buildClientContext(client)
   const steps: string[] = []
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (e: any) {
+    console.error('STEP 1 Competitor discovery failed:', e)
     steps.push(`Competitor discovery failed: ${e.message}`)
   }
 
@@ -120,6 +123,7 @@ export async function POST(request: Request) {
     }
     steps.push(`Crawled ${competitorRows.filter((c) => c.domain).length} competitor websites`)
   } catch (e: any) {
+    console.error('STEP 2 Competitor crawl failed:', e)
     steps.push(`Competitor crawl failed: ${e.message}`)
   }
 
@@ -150,6 +154,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (e: any) {
+    console.error('STEP 3 Prompt generation failed:', e)
     steps.push(`Prompt generation failed: ${e.message}`)
   }
 
@@ -195,6 +200,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (e: any) {
+    console.error('STEP 4 Keyword discovery failed:', e)
     steps.push(`Keyword discovery failed: ${e.message}`)
   }
 
@@ -229,8 +235,11 @@ export async function POST(request: Request) {
     }
     steps.push(`Completed competitive intelligence analysis`)
   } catch (e: any) {
+    console.error('STEP 5 Intelligence analysis failed:', e)
     steps.push(`Intelligence analysis failed: ${e.message}`)
   }
+
+  console.log('Setup complete. Steps:', JSON.stringify(steps))
 
   return NextResponse.json({
     steps,
@@ -239,7 +248,7 @@ export async function POST(request: Request) {
     prompts_created: promptIds.length,
   })
   } catch (e: any) {
-    console.error('Setup route crashed:', e)
+    console.error('Setup route TOP-LEVEL CRASH:', e)
     return NextResponse.json({ error: e.message || 'Setup failed' }, { status: 500 })
   }
 }

@@ -104,15 +104,20 @@ Identify the top 5 competitors for this specific business.`
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const response = await anthropic.messages.create({
-    model: MODELS.sonnet,
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
-
-  const block = response.content[0]
-  const text = block.type === 'text' ? block.text : ''
+  let text: string
+  try {
+    const response = await anthropic.messages.create({
+      model: MODELS.sonnet,
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+    const block = response.content[0]
+    text = block.type === 'text' ? block.text : ''
+  } catch (e: any) {
+    console.error('Competitor discovery AI call failed:', e)
+    return NextResponse.json({ error: 'AI call failed — please try again' }, { status: 502 })
+  }
 
   let parsed: { competitors: { name: string; domain: string | null; reason: string }[] }
   try {
