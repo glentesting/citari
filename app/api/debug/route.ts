@@ -60,7 +60,7 @@ export async function GET() {
   }
 
   // Test specific model IDs to see what's available
-  for (const modelId of ['claude-sonnet-4-5-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-sonnet-latest']) {
+  for (const modelId of ['claude-sonnet-4-6', 'claude-sonnet-4-5-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-7-sonnet-20250219', 'claude-sonnet-4-5-latest']) {
     try {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       const res = await anthropic.messages.create({
