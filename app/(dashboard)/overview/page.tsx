@@ -45,8 +45,54 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true)
   const [runningSetup, setRunningSetup] = useState(false)
   const [setupStep, setSetupStep] = useState(0)
+  const [enriching, setEnriching] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+
+  // Auto-trigger enrich if competitors exist but have no intel
+  useEffect(() => {
+    if (!activeClient || enriching) return
+    let cancelled = false
+
+    async function checkAndEnrich() {
+      const { data: comps } = await supabase.from('competitors')
+        .select('id, intel_brief')
+        .eq('client_id', activeClient!.id)
+
+      if (!comps || comps.length === 0 || cancelled) return
+      const needsEnrich = comps.some((c) => !c.intel_brief)
+      if (!needsEnrich) return
+
+      setEnriching(true)
+      // Fire and forget
+      fetch('/api/clients/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: activeClient!.id }),
+      }).catch((e) => console.error('Enrich failed:', e))
+    }
+
+    checkAndEnrich()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient])
+
+  // Poll to detect when enrich completes
+  useEffect(() => {
+    if (!enriching || !activeClient) return
+    const interval = setInterval(async () => {
+      const { data: comps } = await supabase.from('competitors')
+        .select('id, intel_brief')
+        .eq('client_id', activeClient.id)
+
+      if (comps && comps.length > 0 && comps.every((c) => c.intel_brief)) {
+        setEnriching(false)
+        clearInterval(interval)
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enriching, activeClient])
 
   const fetchData = useCallback(async () => {
     if (!activeClient) {
@@ -359,6 +405,16 @@ export default function OverviewPage() {
 
       <div className="mt-6 space-y-6">
         {d.alertMessage && <AlertBanner message={d.alertMessage} />}
+
+        {enriching && (
+          <div className="bg-brand-bg border border-brand-border rounded-xl px-5 py-3 flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-brand animate-pulse flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-brand">Building competitive intelligence...</p>
+              <p className="text-xs text-brand/70">Crawling competitor websites and generating analysis. This runs in the background.</p>
+            </div>
+          </div>
+        )}
 
         <PredictiveAlerts />
 

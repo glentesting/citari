@@ -5,11 +5,9 @@ import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
 import { searchKeyword } from '@/lib/keywords/serper'
-import { crawlCompetitorSitemap, fetchPageContent } from '@/lib/competitors/crawl'
-import { generateCompetitorIntelligence } from '@/lib/competitors/intelligence'
 import { buildClientContext } from '@/lib/utils'
 
-export const maxDuration = 120
+export const maxDuration = 60
 
 export async function POST(request: Request) {
   try {
@@ -44,7 +42,7 @@ export async function POST(request: Request) {
 
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-  console.log('Setup starting for client:', client.name, '| domain:', client.domain, '| industry:', client.industry)
+  console.log('Setup starting for client:', client.name)
 
   const clientContext = buildClientContext(client)
   const steps: string[] = []
@@ -52,7 +50,6 @@ export async function POST(request: Request) {
 
   // ── STEP 1: Discover competitors ──
   let competitorNames: string[] = []
-  const competitorRows: { name: string; domain: string | null }[] = []
   try {
     const res = await anthropic.messages.create({
       model: MODELS.sonnet,
@@ -66,12 +63,13 @@ export async function POST(request: Request) {
     if (match) {
       const parsed = JSON.parse(match[0])
       if (Array.isArray(parsed.competitors)) {
-        for (const c of parsed.competitors.slice(0, 5)) {
-          competitorRows.push({ name: c.name, domain: c.domain || null })
-        }
-        const rows = competitorRows.map((c) => ({ client_id, name: c.name, domain: c.domain }))
+        const rows = parsed.competitors.slice(0, 5).map((c: any) => ({
+          client_id,
+          name: c.name,
+          domain: c.domain || null,
+        }))
         await admin.from('competitors').insert(rows)
-        competitorNames = competitorRows.map((r) => r.name)
+        competitorNames = rows.map((r: any) => r.name)
         steps.push(`Added ${rows.length} competitors`)
       }
     }
@@ -80,55 +78,7 @@ export async function POST(request: Request) {
     steps.push(`Competitor discovery failed: ${e.message}`)
   }
 
-  // ── STEP 2: Crawl competitor websites ──
-  try {
-    const BATCH_SIZE = 3
-    for (const comp of competitorRows) {
-      if (!comp.domain) continue
-      const urls = await crawlCompetitorSitemap(comp.domain)
-      if (urls.length === 0) {
-        const homepage = await fetchPageContent(`https://${comp.domain}`)
-        if (homepage) urls.push(homepage.url)
-      }
-
-      const pages = []
-      for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-        const batch = urls.slice(i, i + BATCH_SIZE)
-        const results = await Promise.all(
-          batch.map((url) => fetchPageContent(url).catch(() => null))
-        )
-        for (const content of results) {
-          if (content) pages.push(content)
-        }
-      }
-
-      if (pages.length > 0) {
-        // Get competitor ID
-        const { data: compRecord } = await admin.from('competitors')
-          .select('id').eq('client_id', client_id).eq('name', comp.name).single()
-
-        if (compRecord) {
-          const contentRows = pages.map((page) => ({
-            competitor_id: compRecord.id,
-            url: page.url,
-            title: page.title,
-            excerpt: page.excerpt.slice(0, 2000),
-            likely_cited: false,
-            citation_prompt_ids: [] as string[],
-          }))
-          await admin.from('competitor_content').delete().eq('competitor_id', compRecord.id)
-          await admin.from('competitor_content').insert(contentRows)
-        }
-      }
-    }
-    steps.push(`Crawled ${competitorRows.filter((c) => c.domain).length} competitor websites`)
-  } catch (e: any) {
-    console.error('STEP 2 Competitor crawl failed:', e)
-    steps.push(`Competitor crawl failed: ${e.message}`)
-  }
-
-  // ── STEP 3: Generate tracking prompts ──
-  let promptIds: string[] = []
+  // ── STEP 2: Generate tracking prompts ──
   try {
     const res = await anthropic.messages.create({
       model: MODELS.sonnet,
@@ -148,20 +98,21 @@ export async function POST(request: Request) {
           category: ['awareness', 'evaluation', 'purchase'].includes(p.category) ? p.category : 'awareness',
           is_active: true,
         }))
-        const { data: inserted } = await admin.from('prompts').insert(rows).select('id')
-        promptIds = (inserted || []).map((r) => r.id)
+        await admin.from('prompts').insert(rows).select('id')
         steps.push(`Added ${rows.length} tracking prompts`)
       }
     }
   } catch (e: any) {
-    console.error('STEP 3 Prompt generation failed:', e)
+    console.error('STEP 2 Prompt generation failed:', e)
     steps.push(`Prompt generation failed: ${e.message}`)
   }
 
-  // ── STEP 4: Generate buyer-intent keywords ──
+  // ── STEP 3: Generate buyer-intent keywords ──
   try {
     if (client.domain) {
-      const compDomains = competitorRows.map((c) => c.domain).filter(Boolean) as string[]
+      const compDomains = competitorNames.length > 0
+        ? (await admin.from('competitors').select('domain').eq('client_id', client_id)).data?.map((c) => c.domain).filter(Boolean) as string[] || []
+        : []
 
       const kwRes = await anthropic.messages.create({
         model: MODELS.sonnet,
@@ -186,25 +137,16 @@ export async function POST(request: Request) {
           try {
             const result = await searchKeyword(kw, client.domain, compDomains)
             keywordRows.push({
-              client_id,
-              keyword: kw,
-              category: 'category' as const,
-              monthly_volume: result.monthlyVolume,
-              your_rank: result.position,
-              top_competitor_name: result.topCompetitorName,
-              top_competitor_rank: result.topCompetitorRank,
+              client_id, keyword: kw, category: 'category' as const,
+              monthly_volume: result.monthlyVolume, your_rank: result.position,
+              top_competitor_name: result.topCompetitorName, top_competitor_rank: result.topCompetitorRank,
               ai_visible: 'no' as const,
             })
-          } catch (kwErr: any) {
-            // One keyword failing shouldn't kill the whole step
+          } catch {
             keywordRows.push({
-              client_id,
-              keyword: kw,
-              category: 'category' as const,
-              monthly_volume: null,
-              your_rank: null,
-              top_competitor_name: null,
-              top_competitor_rank: null,
+              client_id, keyword: kw, category: 'category' as const,
+              monthly_volume: null, your_rank: null,
+              top_competitor_name: null, top_competitor_rank: null,
               ai_visible: 'no' as const,
             })
           }
@@ -216,43 +158,8 @@ export async function POST(request: Request) {
       }
     }
   } catch (e: any) {
-    console.error('STEP 4 Keyword discovery failed:', e)
+    console.error('STEP 3 Keyword discovery failed:', e)
     steps.push(`Keyword discovery failed: ${e.message}`)
-  }
-
-  // ── STEP 5: Run competitive intelligence for each competitor ──
-  try {
-    const { data: comps } = await admin.from('competitors')
-      .select('id, name, domain')
-      .eq('client_id', client_id)
-
-    for (const comp of (comps || [])) {
-      try {
-        const { data: content } = await admin.from('competitor_content')
-          .select('title, excerpt')
-          .eq('competitor_id', comp.id)
-          .limit(10)
-
-        const intel = await generateCompetitorIntelligence(
-          client,
-          { name: comp.name, domain: comp.domain },
-          content || []
-        )
-
-        await admin.from('competitors').update({
-          intel_brief: intel.intel_brief,
-          why_winning: intel.why_winning,
-          content_gaps: intel.content_gaps,
-          visibility_score: intel.visibility_score,
-        }).eq('id', comp.id)
-      } catch (e: any) {
-        console.error(`Intel analysis failed for ${comp.name}:`, e)
-      }
-    }
-    steps.push(`Completed competitive intelligence analysis`)
-  } catch (e: any) {
-    console.error('STEP 5 Intelligence analysis failed:', e)
-    steps.push(`Intelligence analysis failed: ${e.message}`)
   }
 
   console.log('Setup complete. Steps:', JSON.stringify(steps))
@@ -261,7 +168,6 @@ export async function POST(request: Request) {
     steps,
     success: steps.length > 0,
     competitors_found: competitorNames.length,
-    prompts_created: promptIds.length,
   })
   } catch (e: any) {
     console.error('Setup route TOP-LEVEL CRASH:', e)
