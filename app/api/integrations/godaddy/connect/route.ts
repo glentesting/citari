@@ -40,14 +40,26 @@ export async function POST(request: Request) {
   const { data: settings } = await admin.from('user_settings').select('workspace_id').eq('user_id', user.id).single()
   if (!settings?.workspace_id) return NextResponse.json({ error: 'No workspace' }, { status: 400 })
 
-  const { error } = await admin.from('cms_connections').insert({
+  const { data: existing } = await admin
+    .from('cms_connections')
+    .select('id')
+    .eq('workspace_id', settings.workspace_id)
+    .eq('platform', 'godaddy')
+    .single()
+
+  if (existing) {
+    await admin.from('cms_connections').update({ access_token: `${api_key}:${api_secret}`, is_active: true }).eq('id', existing.id)
+    return NextResponse.json({ id: existing.id, status: 'updated' })
+  }
+
+  const { data: created, error } = await admin.from('cms_connections').insert({
     workspace_id: settings.workspace_id,
-    platform: 'godaddy' as any,
+    platform: 'godaddy',
     access_token: `${api_key}:${api_secret}`,
     site_url: 'https://godaddy.com',
     is_active: true,
-  })
+  }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ status: 'connected' })
+  return NextResponse.json({ id: created.id, status: 'connected' })
 }
