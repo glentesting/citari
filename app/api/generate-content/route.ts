@@ -81,6 +81,27 @@ export async function POST(request: Request) {
 
   const competitorNames = (competitors || []).map((c) => c.name)
 
+  // Pull recent scan excerpts where client wasn't mentioned for this prompt
+  let scanIntelligence: string | undefined
+  const { data: matchedPrompt } = await adminSupabase.from('prompts')
+    .select('id').eq('client_id', client_id).eq('text', target_prompt).limit(1).single()
+
+  if (matchedPrompt) {
+    const { data: lostScans } = await adminSupabase.from('scan_results')
+      .select('model, response_excerpt, competitor_mentions, why_competitor_wins')
+      .eq('client_id', client_id)
+      .eq('prompt_id', matchedPrompt.id)
+      .eq('mentioned', false)
+      .order('scanned_at', { ascending: false })
+      .limit(6)
+
+    if (lostScans && lostScans.length > 0) {
+      scanIntelligence = lostScans.map((s) =>
+        `[${s.model}] ${s.response_excerpt?.slice(0, 400) || ''}${s.why_competitor_wins ? `\nAnalysis: ${s.why_competitor_wins}` : ''}`
+      ).join('\n---\n')
+    }
+  }
+
   // Generate content
   let result: { title: string; content: string }
   try {
@@ -93,6 +114,7 @@ export async function POST(request: Request) {
       clientDomain: client.domain || undefined,
       clientIndustry: clientContext,
       competitorNames,
+      scanIntelligence,
     })
   } catch (e: any) {
     console.error('Content generation AI call failed:', e)

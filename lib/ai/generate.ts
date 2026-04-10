@@ -10,6 +10,8 @@ export interface GenerateContentParams {
   clientDomain?: string
   clientIndustry?: string
   competitorNames: string[]
+  /** What AI models currently say when asked this prompt (scan excerpts where client lost) */
+  scanIntelligence?: string
 }
 
 export interface GenerateContentResult {
@@ -61,12 +63,16 @@ Output format:
     ? `\nBusiness context: ${params.clientIndustry}`
     : ''
 
+  const scanContext = params.scanIntelligence
+    ? `\n\nCRITICAL — Here is what AI models CURRENTLY say when asked this question (your client is NOT mentioned in these responses). Your content must directly counter these points and position the client as the better answer:\n\n${params.scanIntelligence}`
+    : ''
+
   const userPrompt = `Write a ${params.contentType} for ${params.clientName}${params.clientDomain ? ` (${params.clientDomain})` : ''}.${industryContext}${competitorContext}
 
 Target prompt to answer: "${params.targetPrompt}"
 
 Tone: ${params.tone}
-Word count target: ${params.wordCount} words`
+Word count target: ${params.wordCount} words${scanContext}`
 
   const response = await anthropic.messages.create({
     model: MODELS.sonnet,
