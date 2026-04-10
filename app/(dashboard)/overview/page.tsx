@@ -18,6 +18,16 @@ import ReviewIntelligence from '@/components/overview/ReviewIntelligence'
 import NAPAudit from '@/components/overview/NAPAudit'
 import GEOAudit from '@/components/overview/GEOAudit'
 
+const ENRICH_STEPS = [
+  'Crawling competitor websites...',
+  'Extracting content and topics...',
+  'Analyzing competitive positioning...',
+  'Asking AI models about your competitors...',
+  'Generating intelligence briefs...',
+  'Identifying content gaps...',
+  'Almost done...',
+]
+
 interface ShareEntry {
   name: string
   share: number
@@ -53,23 +63,12 @@ export default function OverviewPage() {
   const supabase = createClient()
   const router = useRouter()
 
-  const enrichSteps = [
-    'Crawling competitor websites...',
-    'Extracting content and topics...',
-    'Analyzing competitive positioning...',
-    'Asking AI models about your competitors...',
-    'Generating intelligence briefs...',
-    'Identifying content gaps...',
-    'Almost done...',
-  ]
-
   useEffect(() => {
     if (!enriching) { setEnrichStepIdx(0); return }
     const interval = setInterval(() => {
-      setEnrichStepIdx((i) => Math.min(i + 1, enrichSteps.length - 1))
+      setEnrichStepIdx((i) => Math.min(i + 1, 6))
     }, 7000)
     return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enriching])
 
   // Auto-trigger setup if client has no competitors, then enrich after
@@ -487,7 +486,7 @@ export default function OverviewPage() {
             <div className="w-4 h-4 rounded-full bg-brand animate-pulse flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-brand">Building competitive intelligence...</p>
-              <p className="text-xs text-brand/70 transition-all duration-500">{enrichSteps[enrichStepIdx]}</p>
+              <p className="text-xs text-brand/70 transition-all duration-500">{ENRICH_STEPS[enrichStepIdx]}</p>
             </div>
           </div>
         )}
