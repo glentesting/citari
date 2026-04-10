@@ -137,27 +137,14 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
 
     if (!client) { onClose(); return }
 
-    // Automatically trigger setup
+    // Fire setup in background — don't block navigation
+    fetch('/api/clients/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: client.id }),
+    }).catch((e) => console.error('Client setup failed:', e))
+
     setLoading(false)
-    setSettingUp(true)
-    setCurrentStep(0)
-
-    const stepInterval = setInterval(() => {
-      setCurrentStep((prev) => Math.min(prev + 1, setupSteps.length - 1))
-    }, 6000)
-
-    try {
-      await fetch('/api/clients/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: client.id }),
-      })
-    } catch (e) {
-      console.error('Client setup failed:', e)
-    }
-
-    clearInterval(stepInterval)
-    await refreshClients()
     onClose()
     router.push('/overview')
     router.refresh()

@@ -12,6 +12,7 @@ import { buildClientContext } from '@/lib/utils'
 export const maxDuration = 120
 
 export async function POST(request: Request) {
+  try {
   const cookieStore = cookies()
 
   const supabase = createServerClient(
@@ -237,4 +238,8 @@ export async function POST(request: Request) {
     competitors_found: competitorNames.length,
     prompts_created: promptIds.length,
   })
+  } catch (e: any) {
+    console.error('Setup route crashed:', e)
+    return NextResponse.json({ error: e.message || 'Setup failed' }, { status: 500 })
+  }
 }
