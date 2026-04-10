@@ -64,24 +64,30 @@ export async function POST(request: Request) {
   const response = await anthropic.messages.create({
     model: MODELS.sonnet,
     max_tokens: 3000,
-    system: `You are a PR strategist. Generate a PR brief for getting a company featured in publications that AI models cite. Return valid JSON:
+    system: `You are a PR and media outreach strategist for a ${client.specialization || client.industry || 'professional services'} firm. Generate a comprehensive PR brief with actionable outreach targets. Return valid JSON:
 {
-  "summary": "One paragraph overview of the PR opportunity",
-  "target_publications": [{"name": "...", "why": "...", "pitch_angle": "..."}],
-  "press_release_draft": "A 300-word press release draft",
-  "pitch_email": "A short pitch email template"
-}`,
+  "summary": "One paragraph overview of the PR opportunity and current media positioning",
+  "target_publications": [{"name": "publication name", "why": "why this publication matters for AI visibility", "pitch_angle": "specific story angle to pitch", "contact_approach": "how to reach the editor/journalist"}],
+  "press_release_draft": "A 300-word press release draft that positions the firm as an authority",
+  "pitch_email": "A ready-to-send pitch email template with subject line"
+}
+
+Target 8-10 publications. Include a mix of: industry-specific publications, local/regional media for their markets, legal directories that AI cites, and general business press. Be specific about WHY each publication matters for AI visibility.`,
     messages: [{
       role: 'user',
       content: `Company: ${client.name} (${client.domain || ''})
 Industry: ${client.industry || 'general'}
+Specialization: ${client.specialization || 'general practice'}
+Location: ${client.location || 'national'}
+Description: ${client.description || ''}
+Target clients: ${client.target_clients || ''}
 
 Publications that AI models cite for competitors in this category:
 ${topPublications.length > 0
   ? topPublications.map(([pub, count]) => `- ${pub} (cited ${count}x)`).join('\n')
-  : 'No publication data yet — suggest relevant industry publications'}
+  : 'No publication data yet — suggest relevant industry publications for ' + (client.specialization || client.industry || 'this business')}
 
-Generate a PR brief to get ${client.name} covered by these publications.`,
+Generate a comprehensive PR brief to get ${client.name} covered and cited by AI models.`,
     }],
   })
 

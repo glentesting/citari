@@ -32,14 +32,20 @@ export async function POST(request: Request) {
   const { data: client } = await admin.from('clients').select('name, domain, industry, specialization').eq('id', client_id).single()
   if (!client || !client.domain) return NextResponse.json({ error: 'Client not found or missing domain' }, { status: 404 })
 
-  const { data: competitors } = await admin.from('competitors').select('domain').eq('client_id', client_id)
+  const { data: competitors } = await admin.from('competitors').select('name, domain').eq('client_id', client_id)
   const compDomains = (competitors || []).map((c) => c.domain).filter(Boolean) as string[]
+  const compNames = (competitors || []).map((c) => c.name).filter(Boolean)
 
-  if (compDomains.length === 0) {
-    return NextResponse.json({ error: 'Add competitors with domains first' }, { status: 400 })
+  if (compDomains.length === 0 && compNames.length === 0) {
+    return NextResponse.json({ error: 'Add competitors first' }, { status: 400 })
   }
 
-  const opportunities = await discoverBacklinkOpportunities(client.domain, compDomains, client.specialization || client.industry)
+  // Use competitor domains if available, otherwise search by competitor names
+  const searchDomains = compDomains.length > 0
+    ? compDomains
+    : compNames.slice(0, 3).map((name) => name.toLowerCase().replace(/\s+/g, ''))
+
+  const opportunities = await discoverBacklinkOpportunities(client.domain, searchDomains, client.specialization || client.industry)
 
   // Delete old and insert fresh
   await admin.from('backlink_opportunities').delete().eq('client_id', client_id)

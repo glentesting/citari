@@ -125,19 +125,21 @@ export async function POST(request: Request) {
   const prompt_id: string | null = matchedPrompt?.id || null
 
   // Save to geo_content table
+  const insertData: Record<string, any> = {
+    client_id,
+    title: result.title,
+    content: result.content,
+    target_prompt,
+    content_type,
+    tone,
+    word_count_target: word_count,
+    status: 'draft',
+  }
+  if (prompt_id) insertData.prompt_id = prompt_id
+
   const { data: saved, error: saveError } = await adminSupabase
     .from('geo_content')
-    .insert({
-      client_id,
-      prompt_id,
-      title: result.title,
-      content: result.content,
-      target_prompt,
-      content_type,
-      tone,
-      word_count_target: word_count,
-      status: 'draft',
-    })
+    .insert(insertData)
     .select()
     .single()
 
