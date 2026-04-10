@@ -88,32 +88,44 @@ export async function GET(request: Request) {
         const prevTotal = (prevScans || []).length
         const prevScore = prevTotal > 0 ? Math.round((prevMentions / prevTotal) * 100) : -1
 
-        // Scan each prompt
+        // Scan prompts in parallel batches of 3
         const allResults: any[] = []
+        const context = buildClientContext(client)
+        const SCAN_BATCH = 3
 
-        for (const prompt of prompts) {
-          const results = await scanPrompt(prompt.text, client.name, competitorNames, buildClientContext(client))
+        for (let i = 0; i < prompts.length; i += SCAN_BATCH) {
+          const batch = prompts.slice(i, i + SCAN_BATCH)
+          const batchResults = await Promise.allSettled(
+            batch.map((prompt) => scanPrompt(prompt.text, client.name, competitorNames, context))
+          )
 
-          for (const result of results) {
-            allResults.push({
-              prompt_id: prompt.id,
-              client_id: client.id,
-              model: result.model,
-              mentioned: result.mentioned,
-              mention_position: result.mention_position,
-              mention_quality: result.mention_quality,
-              authority_score: result.authority_score,
-              recommendation_strength: result.recommendation_strength,
-              why_competitor_wins: result.why_competitor_wins,
-              citation_sources: result.citation_sources,
-              citation_source_types: result.citation_source_types,
-              sentiment: result.sentiment,
-              response_excerpt: result.response_excerpt,
-              competitor_mentions: result.competitor_mentions,
-            })
+          for (let j = 0; j < batchResults.length; j++) {
+            const settled = batchResults[j]
+            const prompt = batch[j]
+            if (settled.status === 'fulfilled') {
+              for (const result of settled.value) {
+                allResults.push({
+                  prompt_id: prompt.id,
+                  client_id: client.id,
+                  model: result.model,
+                  mentioned: result.mentioned,
+                  mention_position: result.mention_position,
+                  mention_quality: result.mention_quality,
+                  authority_score: result.authority_score,
+                  recommendation_strength: result.recommendation_strength,
+                  why_competitor_wins: result.why_competitor_wins,
+                  citation_sources: result.citation_sources,
+                  citation_source_types: result.citation_source_types,
+                  sentiment: result.sentiment,
+                  response_excerpt: result.response_excerpt,
+                  competitor_mentions: result.competitor_mentions,
+                })
+              }
+            } else {
+              console.error(`Scan failed for prompt "${prompt.text.slice(0, 50)}":`, settled.reason)
+            }
+            totalScanned++
           }
-
-          totalScanned++
         }
 
         // Insert results
