@@ -23,6 +23,7 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [quickWins, setQuickWins] = useState<string[]>([])
   const [checkedWins, setCheckedWins] = useState<Set<number>>(new Set())
+  const [auditing, setAuditing] = useState(false)
 
   const hasIntel = !!competitor.intel_brief
 
@@ -85,6 +86,21 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
     }
   }
 
+  async function handleAIAudit() {
+    setAuditing(true)
+    try {
+      await fetch('/api/competitors/ai-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ competitor_id: competitor.id }),
+      })
+      onRefreshed()
+    } catch (e) {
+      console.error('AI audit failed:', e)
+    }
+    setAuditing(false)
+  }
+
   // Determine threat level from visibility score
   const score = competitor.visibility_score || 0
   const threat = score >= 75 ? 'critical' : score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low'
@@ -131,6 +147,20 @@ export default function CompetitorIntelCard({ competitor, clientName, onDeleted,
                   </>
                 ) : hasIntel ? 'Re-analyze' : 'Run Analysis'}
               </button>
+              {hasIntel && (
+                <button onClick={handleAIAudit} disabled={auditing}
+                  className="px-3 py-1.5 text-xs font-semibold text-brand border border-brand/20 rounded-lg hover:bg-brand-bg disabled:opacity-50 flex items-center gap-1.5">
+                  {auditing ? (
+                    <>
+                      <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Auditing...
+                    </>
+                  ) : 'AI Audit'}
+                </button>
+              )}
             <button onClick={handleDelete}
               className="p-1.5 text-gray-300 hover:text-red-500 transition-colors" title="Delete competitor">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
