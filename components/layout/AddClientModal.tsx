@@ -38,7 +38,10 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
 
   // Edit mode for manual override
   const [editing, setEditing] = useState(false)
-  const [editFields, setEditFields] = useState<ScanResult | null>(null)
+  const [editFields, setEditFields] = useState<ScanResult>({
+    name: '', description: '', specialization: '', location: '',
+    target_clients: '', differentiators: '', industry: '',
+  })
 
   // Save/setup state
   const [loading, setLoading] = useState(false)
@@ -81,16 +84,16 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
     // Reset scan when domain changes
     if (scanResult) {
       setScanResult(null)
-      setEditFields(null)
+      setEditFields({ name: '', description: '', specialization: '', location: '', target_clients: '', differentiators: '', industry: '' })
       setEditing(false)
       setScanError(false)
     }
   }
 
   function getActiveData(): ScanResult {
-    if (editing && editFields) return editFields
+    if (editing) return editFields
     if (scanResult) return scanResult
-    return { name: '', description: '', specialization: '', location: '', target_clients: '', differentiators: '', industry: '' }
+    return editFields
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -282,25 +285,25 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
               {editing && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Edit details</p>}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Industry</label>
-                <input type="text" value={editFields?.industry || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, industry: e.target.value }))}
+                <input type="text" value={editFields?.industry || ''} onChange={(e) => setEditFields((prev) => ({ ...prev, industry: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   placeholder="Law, SaaS, Roofing, etc." />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Specialization</label>
-                <input type="text" value={editFields?.specialization || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, specialization: e.target.value }))}
+                <input type="text" value={editFields?.specialization || ''} onChange={(e) => setEditFields((prev) => ({ ...prev, specialization: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   placeholder="e.g. Healthcare business law, corporate law" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Location</label>
-                <input type="text" value={editFields?.location || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, location: e.target.value }))}
+                <input type="text" value={editFields?.location || ''} onChange={(e) => setEditFields((prev) => ({ ...prev, location: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   placeholder="e.g. Texas, Indiana, Georgia" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                <textarea value={editFields?.description || ''} onChange={(e) => setEditFields((prev) => ({ ...prev!, description: e.target.value }))} rows={2}
+                <textarea value={editFields?.description || ''} onChange={(e) => setEditFields((prev) => ({ ...prev, description: e.target.value }))} rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
                   placeholder="Brief description of what they do and who their clients are" />
               </div>
