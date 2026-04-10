@@ -141,7 +141,7 @@ export async function POST(request: Request) {
           const audit = await runCompetitorAIAudit(comp.name, comp.domain, client.industry || null)
           if (audit.aiPerception) {
             auditSection = [
-              '\n\n## What AI Models Believe',
+              '\n\n## What AI Models Believe\n',
               audit.aiPerception,
               '',
               ...(audit.repeatedClaims.length > 0 ? ['**Claims AI repeats (citation weight):**', ...audit.repeatedClaims.map((c) => `- ${c}`), ''] : []),

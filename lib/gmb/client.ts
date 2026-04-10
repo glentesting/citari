@@ -1,4 +1,6 @@
 import { fetchWithTimeout } from '@/lib/utils'
+import Anthropic from '@anthropic-ai/sdk'
+import { MODELS } from '@/lib/ai/models'
 
 export interface GMBLocation {
   name: string
@@ -89,8 +91,6 @@ export async function generateGMBResponseTemplate(
   businessDescription?: string
 ): Promise<string> {
   try {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default
-    const { MODELS } = await import('@/lib/ai/models')
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const res = await anthropic.messages.create({

@@ -53,28 +53,25 @@ export async function POST(request: Request) {
     const updateData: Record<string, any> = {}
 
     if (audit.aiPerception) {
-      // Append AI audit section to existing intel_brief
       const { data: current } = await admin.from('competitors')
         .select('intel_brief').eq('id', competitor_id).single()
 
-      const existingBrief = current?.intel_brief || ''
       const auditSection = [
-        '\n\n## What AI Models Believe',
+        '## What AI Models Believe',
         audit.aiPerception,
         '',
-        audit.repeatedClaims.length > 0 ? '**Claims AI repeats (these have citation weight):**' : '',
-        ...audit.repeatedClaims.map((c) => `- ${c}`),
-        '',
-        audit.perceivedStrengths.length > 0 ? '**Strengths AI attributes:**' : '',
-        ...audit.perceivedStrengths.map((s) => `- ${s}`),
-        '',
-        audit.perceivedWeaknesses.length > 0 ? '**Weaknesses AI mentions:**' : '',
-        ...audit.perceivedWeaknesses.map((w) => `- ${w}`),
-        '',
-        audit.citedSources.length > 0 ? `**Sources AI draws on:** ${audit.citedSources.join(', ')}` : '',
+        ...(audit.repeatedClaims.length > 0 ? ['**Claims AI repeats (citation weight):**', ...audit.repeatedClaims.map((c) => `- ${c}`), ''] : []),
+        ...(audit.perceivedStrengths.length > 0 ? ['**Strengths AI attributes:**', ...audit.perceivedStrengths.map((s) => `- ${s}`), ''] : []),
+        ...(audit.perceivedWeaknesses.length > 0 ? ['**Weaknesses AI mentions:**', ...audit.perceivedWeaknesses.map((w) => `- ${w}`), ''] : []),
+        ...(audit.citedSources.length > 0 ? [`**Sources AI draws on:** ${audit.citedSources.join(', ')}`] : []),
       ].filter(Boolean).join('\n')
 
-      updateData.intel_brief = existingBrief + auditSection
+      // Strip any existing "What AI Models Believe" section before appending
+      let baseBrief = (current?.intel_brief || '')
+        .replace(/\n*## What AI Models Believe[\s\S]*$/, '')
+        .trimEnd()
+
+      updateData.intel_brief = baseBrief + '\n\n' + auditSection
     }
 
     if (Object.keys(updateData).length > 0) {

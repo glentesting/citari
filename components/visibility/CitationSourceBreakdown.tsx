@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
+import { buildCitationHitList } from '@/lib/analytics/citationSources'
 
 interface SourceData {
   source: string
@@ -77,49 +78,14 @@ export default function CitationSourceBreakdown() {
       else if (reviewSite === 0) setRecommendation('Zero review site citations. Getting 20+ reviews on G2 or Google could significantly increase AI authority.')
       else setRecommendation('Good citation diversity. Focus on increasing volume across your strongest sources.')
 
-      // Build cross-competitor hit list
-      const { data: allScans } = await supabase
-        .from('scan_results')
-        .select('citation_sources, citation_source_types, competitor_mentions, mentioned')
-        .eq('client_id', activeClient!.id)
-        .gte('scanned_at', thirtyDaysAgo.toISOString())
-
-      const { data: competitors } = await supabase
-        .from('competitors')
-        .select('name')
-        .eq('client_id', activeClient!.id)
-
-      const compNames = (competitors || []).map((c) => c.name)
-      const clientPlatforms = new Set<string>()
-      const compPlatforms = new Map<string, Set<string>>()
-
-      for (const scan of (allScans || [])) {
-        const srcs = scan.citation_sources || []
-        for (const src of srcs) {
-          const s = (src as string).toLowerCase()
-          if (scan.mentioned) clientPlatforms.add(s)
-          for (const cn of compNames) {
-            if ((scan.competitor_mentions || []).includes(cn)) {
-              const existing = compPlatforms.get(s)
-              if (existing) existing.add(cn)
-              else compPlatforms.set(s, new Set([cn]))
-            }
-          }
-        }
-      }
-
-      const hits = Array.from(compPlatforms.entries())
-        .filter(([platform]) => !clientPlatforms.has(platform))
-        .map(([platform, comps]) => ({
-          platform,
-          competitors_on_it: [...comps],
-          priority: comps.size >= 2 ? 'high' : 'medium',
-          action: `Get listed on ${platform}`,
-        }))
-        .sort((a, b) => (a.priority === 'high' ? 0 : 1) - (b.priority === 'high' ? 0 : 1))
-        .slice(0, 5)
-
-      setHitList(hits)
+      // Build cross-competitor hit list using library function
+      const hits = await buildCitationHitList(supabase, activeClient!.id)
+      setHitList(hits.map((h) => ({
+        platform: h.platform,
+        competitors_on_it: h.competitors_on_it,
+        priority: h.priority,
+        action: h.action,
+      })))
 
       setLoading(false)
     }
