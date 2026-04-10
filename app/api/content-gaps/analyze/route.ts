@@ -51,17 +51,39 @@ export async function POST(request: Request) {
   const compTopics = (compContent || []).map((c) => `- ${c.title}: ${c.url}`).join('\n')
   const clientTopics = (clientContent || []).map((c) => `- ${c.title} (targeting: ${c.target_prompt})`).join('\n')
 
+  // Pull scan data: prompts where this competitor wins and client doesn't
+  const { data: scans } = await admin.from('scan_results')
+    .select('prompt_id, mentioned, competitor_mentions')
+    .eq('client_id', client_id)
+    .order('scanned_at', { ascending: false })
+    .limit(200)
+
+  const { data: prompts } = await admin.from('prompts')
+    .select('id, text').eq('client_id', client_id)
+
+  const promptMap = new Map((prompts || []).map((p) => [p.id, p.text]))
+
+  const competitorWinPrompts = (scans || [])
+    .filter((s: any) => s.competitor_mentions?.includes(competitor.name) && !s.mentioned)
+    .map((s: any) => promptMap.get(s.prompt_id))
+    .filter(Boolean)
+  const uniqueWinPrompts = [...new Set(competitorWinPrompts)].slice(0, 10)
+
+  const scanInsight = uniqueWinPrompts.length > 0
+    ? `\nPROMPTS WHERE COMPETITOR WINS (competitor mentioned, client absent):\n${uniqueWinPrompts.map((p) => `- "${p}"`).join('\n')}\nThese are the HIGHEST PRIORITY gaps — content targeting these prompts should be prioritized.`
+    : ''
+
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
     model: MODELS.haiku,
     max_tokens: 2048,
-    system: `You are a content strategist. Analyze the competitor's content vs the client's content and identify gaps — topics the competitor covers that the client doesn't.
+    system: `You are a content strategist. Analyze the competitor's content vs the client's content and identify gaps. Prioritize gaps where the competitor is winning AI prompts that the client is losing.
 
 Return ONLY valid JSON:
-{"gaps":[{"topic":"...","competitor_url":"...","gap_score":1-10,"estimated_impact":"high|medium|low","reasoning":"..."}]}
+{"gaps":[{"topic":"...","competitor_url":"...","gap_score":1-10,"estimated_impact":"high|medium|low","prompt_count":N,"reasoning":"..."}]}
 
-gap_score: 10 = critical gap, 1 = minor. Focus on gaps that would affect AI visibility.`,
+gap_score: 10 = critical gap the client is actively losing on, 1 = minor. prompt_count = number of active prompts this gap affects.`,
     messages: [{
       role: 'user',
       content: `Client: ${client.name} (${client.industry || 'general'})
@@ -71,8 +93,9 @@ ${clientTopics || 'No content yet'}
 Competitor: ${competitor.name} (${competitor.domain || ''})
 Competitor's content:
 ${compTopics || 'No content crawled'}
+${scanInsight}
 
-Identify the top 10 content gaps.`,
+Identify the top 10 content gaps, prioritizing those that affect active AI prompts.`,
     }],
   })
 
