@@ -16,6 +16,7 @@ import BenchmarkComparison from '@/components/overview/BenchmarkComparison'
 import PredictiveAlerts from '@/components/overview/PredictiveAlerts'
 import ReviewIntelligence from '@/components/overview/ReviewIntelligence'
 import NAPAudit from '@/components/overview/NAPAudit'
+import GEOAudit from '@/components/overview/GEOAudit'
 
 interface ShareEntry {
   name: string
@@ -558,6 +559,7 @@ export default function OverviewPage() {
           }
         />
 
+        <GEOAudit />
         <ReviewIntelligence />
         <NAPAudit />
         <Simulator currentScore={d.visibilityScore} />
