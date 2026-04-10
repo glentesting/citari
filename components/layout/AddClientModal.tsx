@@ -23,6 +23,7 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
   const [location, setLocation] = useState('')
   const [specialization, setSpecialization] = useState('')
   const [description, setDescription] = useState('')
+  const [scanning, setScanning] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [settingUp, setSettingUp] = useState(false)
@@ -30,6 +31,28 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
   const { refreshClients, setActiveClient } = useClient()
   const supabase = createClient()
   const router = useRouter()
+
+  async function handleDomainBlur() {
+    const d = domain.trim()
+    if (!d || scanning) return
+    setScanning(true)
+    try {
+      const res = await fetch('/api/clients/analyze-domain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: d }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.description && !description) setDescription(data.description)
+        if (data.specialization && !specialization) setSpecialization(data.specialization)
+        if (data.location && !location) setLocation(data.location)
+      }
+    } catch (e) {
+      console.error('Domain scan failed:', e)
+    }
+    setScanning(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -168,8 +191,18 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
           <div>
             <label htmlFor="clientDomain" className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
             <input id="clientDomain" type="text" value={domain} onChange={(e) => setDomain(e.target.value)}
+              onBlur={handleDomainBlur}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
               placeholder="acme.com" />
+            {scanning && (
+              <p className="text-xs text-brand mt-1 flex items-center gap-1">
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Scanning website...
+              </p>
+            )}
           </div>
 
           <div>

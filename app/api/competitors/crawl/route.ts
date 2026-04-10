@@ -65,15 +65,21 @@ export async function POST(request: Request) {
     urls.push(fallbackUrl)
   }
 
-  // Fetch page content (rate-limited: sequential with small delay)
+  // Fetch page content in parallel batches of 3
   const pages = []
-  for (const url of urls) {
-    const content = await fetchPageContent(url)
-    if (content) {
-      pages.push(content)
+  const BATCH_SIZE = 3
+  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    const batch = urls.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(
+      batch.map((url) => fetchPageContent(url).catch(() => null))
+    )
+    for (const content of results) {
+      if (content) pages.push(content)
     }
-    // Small delay to be polite
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    // Small delay between batches to be polite
+    if (i + BATCH_SIZE < urls.length) {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    }
   }
 
   // Fetch scan results to cross-reference which content might be cited

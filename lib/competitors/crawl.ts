@@ -1,4 +1,4 @@
-const MAX_PAGES = 20
+const MAX_PAGES = 8
 const FETCH_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; Citari/1.0)' }
 
 /**
