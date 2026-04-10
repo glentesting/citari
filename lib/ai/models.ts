@@ -1,15 +1,8 @@
-/**
- * Centralized AI model IDs — change once here, updates everywhere.
- * NOTE: This API key only has access to Haiku. When Sonnet access
- * is available, update the 'smart' model to a Sonnet model ID.
- */
+/** Centralized AI model IDs — change once here, updates everywhere. */
 export const MODELS = {
-  /** Primary model for complex generation (intel briefs, competitor analysis, content) */
-  smart: 'claude-haiku-4-5-20251001',
-  /** Fast model for simple extraction and classification */
-  fast: 'claude-haiku-4-5-20251001',
-  /** Legacy aliases — point to smart/fast */
-  sonnet: 'claude-haiku-4-5-20251001',
+  /** Claude Sonnet 4.6 — primary model for complex generation */
+  sonnet: 'claude-sonnet-4-6',
+  /** Claude Haiku 4.5 — fast model for simple extraction */
   haiku: 'claude-haiku-4-5-20251001',
   /** OpenAI GPT-4o Mini — used for multi-provider AI scans */
   openai: 'gpt-4o-mini',
