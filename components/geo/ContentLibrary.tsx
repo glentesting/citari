@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useClient } from '@/hooks/useClient'
 import type { GeoContent } from '@/types'
 import { formatDate } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ const typeLabels: Record<string, { label: string; bg: string; text: string }> = 
 }
 
 export default function ContentLibrary({ content, onUpdated }: ContentLibraryProps) {
+  const { activeClient } = useClient()
   const supabase = createClient()
   const [editingUrl, setEditingUrl] = useState<string | null>(null)
   const [urlValue, setUrlValue] = useState('')
@@ -89,6 +91,19 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
         published_at: new Date().toISOString(),
       })
       .eq('id', id)
+
+    // Trigger re-scan of the target prompt this content was created for
+    const item = content.find((c) => c.id === id)
+    if (item?.target_prompt && activeClient) {
+      fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: activeClient.id,
+          prompt_text: item.target_prompt,
+        }),
+      }).catch((e) => console.error('Re-scan after publish failed:', e))
+    }
 
     setEditingUrl(null)
     setUrlValue('')
