@@ -4,6 +4,7 @@ import { scanPrompt } from '@/lib/ai/scan'
 import { routeVisibilityAlert } from '@/lib/email/router'
 import { detectPredictiveThreats } from '@/lib/analytics/predictive'
 import { detectModelDrift } from '@/lib/analytics/drift'
+import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 300 // 5 minute timeout for Vercel
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     // Fetch clients for this workspace
     const { data: clients } = await supabase
       .from('clients')
-      .select('id, name, domain')
+      .select('id, name, domain, industry, location, specialization, description, target_clients, differentiators')
       .eq('workspace_id', workspace.id)
 
     if (!clients || clients.length === 0) continue
@@ -91,7 +92,7 @@ export async function GET(request: Request) {
         const allResults: any[] = []
 
         for (const prompt of prompts) {
-          const results = await scanPrompt(prompt.text, client.name, competitorNames)
+          const results = await scanPrompt(prompt.text, client.name, competitorNames, buildClientContext(client))
 
           for (const result of results) {
             allResults.push({

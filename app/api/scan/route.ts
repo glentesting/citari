@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { scanPrompt } from '@/lib/ai/scan'
+import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -48,16 +49,18 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Fetch client info
+  // Fetch client info with full context
   const { data: client } = await adminSupabase
     .from('clients')
-    .select('name, domain')
+    .select('name, domain, industry, location, specialization, description, target_clients, differentiators')
     .eq('id', client_id)
     .single()
 
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
+
+  const clientContext = buildClientContext(client)
 
   // Fetch competitors for this client
   const { data: competitors } = await adminSupabase
@@ -85,7 +88,7 @@ export async function POST(request: Request) {
   const allResults: any[] = []
 
   for (const prompt of prompts) {
-    const results = await scanPrompt(prompt.text, client.name, competitorNames)
+    const results = await scanPrompt(prompt.text, client.name, competitorNames, clientContext)
 
     for (const result of results) {
       allResults.push({
