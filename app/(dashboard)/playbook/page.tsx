@@ -76,6 +76,7 @@ ${effectivenessTable.map((e) => `- ${e.type}: avg +${e.avgImpact}% in ${e.avgWee
       const res = await fetch('/api/generate-narrative', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
         body: JSON.stringify({
           client_id: entries[0]?.id || 'none', // Just need a valid request
           date_range_start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),

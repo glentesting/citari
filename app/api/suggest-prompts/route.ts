@@ -131,15 +131,24 @@ Competitors: ${competitorNames.length > 0 ? competitorNames.join(', ') : 'None s
 
 Generate 15 tracking prompts. Prioritize real buyer questions if provided.`
 
-  const response = await anthropic.messages.create({
-    model: MODELS.haiku,
-    max_tokens: 1500,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  let text: string
+  try {
+    const withTimeout = <T>(p: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Timed out after ${ms}ms`)), ms))])
 
-  const block = response.content[0]
-  const text = block.type === 'text' ? block.text : ''
+    const response = await withTimeout(anthropic.messages.create({
+      model: MODELS.haiku,
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    }), 25000)
+
+    const block = response.content[0]
+    text = block.type === 'text' ? block.text : ''
+  } catch (e: any) {
+    console.error('Suggest prompts AI call failed:', e)
+    return NextResponse.json({ error: 'AI generation failed — please try again' }, { status: 502 })
+  }
 
   // Parse JSON from response (handle markdown code blocks)
   let parsed: { prompts: { text: string; category: string; reasoning: string }[] }

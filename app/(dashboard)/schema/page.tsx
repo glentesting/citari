@@ -76,6 +76,7 @@ export default function SchemaPage() {
       const res = await fetch('/api/schema/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
         body: JSON.stringify({
           client_id: activeClient.id,
           schema_type: selectedType,

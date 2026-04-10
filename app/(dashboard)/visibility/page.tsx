@@ -64,6 +64,7 @@ export default function VisibilityPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: activeClient.id }),
+        keepalive: true,
       })
 
       const data = await res.json()

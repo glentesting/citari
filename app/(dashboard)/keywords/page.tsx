@@ -40,12 +40,16 @@ export default function KeywordsPage() {
     if (!activeClient) return
     setGenerating(true)
     try {
-      // Call setup endpoint which generates keywords
-      await fetch('/api/clients/setup', {
+      const res = await fetch('/api/keywords/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: activeClient.id }),
+        keepalive: true,
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.error('Keyword generation failed:', data.error)
+      }
       fetchKeywords()
     } catch (e) { console.error('Keyword generation failed:', e) }
     setGenerating(false)
