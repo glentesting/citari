@@ -68,7 +68,8 @@ export async function searchKeyword(
       topCompetitorRank,
       monthlyVolume: data.searchParameters?.searchVolume || null,
     }
-  } catch {
+  } catch (e) {
+    console.error(`Failed to check SERP ranking for keyword "${keyword}":`, e)
     return { keyword, position: null, topCompetitorName: null, topCompetitorRank: null, monthlyVolume: null }
   }
 }
@@ -128,7 +129,8 @@ export async function discoverKeywords(
       for (const p of paa) {
         if (p.question) keywords.add(p.question)
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to fetch People Also Ask keywords:', e)
       continue
     }
   }

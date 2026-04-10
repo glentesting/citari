@@ -22,7 +22,8 @@ export async function safeFetchJson(url: string, options: RequestInit): Promise<
   let data: any
   try {
     data = JSON.parse(text)
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse JSON response:', e)
     throw new Error('Invalid response from server. Try again.')
   }
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`)

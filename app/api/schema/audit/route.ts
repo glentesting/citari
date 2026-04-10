@@ -64,7 +64,8 @@ export async function POST(request: Request) {
             const parsed = JSON.parse(jsonMatch)
             const schemaType = parsed['@type'] || 'Unknown'
             schemasFound.push({ type: schemaType, valid: true })
-          } catch {
+          } catch (e) {
+            console.error('Failed to parse LD+JSON schema:', e)
             schemasFound.push({ type: 'Invalid JSON', valid: false })
           }
         }
@@ -97,7 +98,8 @@ export async function POST(request: Request) {
         missing,
         recommendations,
       })
-    } catch {
+    } catch (e) {
+      console.error('Failed to audit schema for URL:', e)
       continue
     }
   }

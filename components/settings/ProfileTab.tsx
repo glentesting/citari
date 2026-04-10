@@ -71,10 +71,12 @@ export default function ProfileTab() {
 
             setStats({ clients: clientIds.length, prompts: promptCount, reports: r.count || 0 })
           }
-        } catch {
+        } catch (e) {
+          console.error('Failed to fetch profile stats:', e)
           // Stats fetch failed — leave defaults
         }
-      } catch {
+      } catch (e) {
+        console.error('Failed to fetch auth user for profile:', e)
         // Auth fetch failed — leave defaults
       }
       setLoading(false)

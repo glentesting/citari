@@ -118,7 +118,8 @@ export async function checkNAPConsistency(
         is_consistent: issues.length === 0,
         issues,
       })
-    } catch {
+    } catch (e) {
+      console.error(`Failed to check NAP consistency for ${dir.name}:`, e)
       results.push({
         directory: dir.name,
         listed_name: null, listed_address: null, listed_phone: null, listed_website: null,

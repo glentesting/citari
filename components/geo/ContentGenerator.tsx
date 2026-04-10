@@ -99,7 +99,8 @@ export default function ContentGenerator({ onGenerated, prefillPrompt = '' }: Co
         setPreview({ title: data.title, content: data.content })
         onGenerated()
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to generate geo content:', e)
       setError('Network error — please try again')
     } finally {
       setLoading(false)

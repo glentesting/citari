@@ -53,7 +53,8 @@ export async function fetchGoogleAds(domain: string): Promise<GoogleAd[]> {
     }
 
     return ads
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Google ads:', e)
     return []
   }
 }

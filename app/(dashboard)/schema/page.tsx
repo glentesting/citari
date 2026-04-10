@@ -109,7 +109,7 @@ export default function SchemaPage() {
         setAuditScore(data.score)
         setAuditResults(data.results)
       }
-    } catch { /* */ }
+    } catch (e) { console.error('Schema audit failed:', e) }
     setAuditing(false)
   }
 

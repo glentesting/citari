@@ -89,7 +89,8 @@ Page URL: ${page_url || client.domain ? `https://${client.domain}` : 'not provid
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     schemaJson = jsonMatch ? JSON.parse(jsonMatch[0]) : null
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse generated schema JSON:', e)
     return NextResponse.json({ error: 'Failed to parse generated schema' }, { status: 500 })
   }
 

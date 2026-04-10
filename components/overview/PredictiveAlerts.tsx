@@ -133,7 +133,7 @@ export default function PredictiveAlerts() {
           }
         }
         setDrifts(foundDrifts)
-      } catch { /* */ }
+      } catch (e) { console.error('Failed to load predictive alerts:', e) }
       setLoading(false)
     }
     load()

@@ -33,7 +33,8 @@ export default async function DashboardLayout({
       .eq('user_id', user.id)
       .single()
     workspaceId = settings?.workspace_id ?? null
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch workspace settings:', e)
     // Settings fetch failed — continue with null workspace
   }
 

@@ -78,7 +78,8 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: client.id }),
       })
-    } catch {
+    } catch (e) {
+      console.error('Client setup failed:', e)
       // Setup failed — still continue to dashboard
     }
 

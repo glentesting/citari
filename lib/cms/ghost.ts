@@ -65,7 +65,8 @@ export async function testGhostConnection(siteUrl: string, adminKey: string): Pr
       signal: AbortSignal.timeout(10000),
     })
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error('Ghost connection test failed:', e)
     return false
   }
 }

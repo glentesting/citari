@@ -301,7 +301,7 @@ export default function OverviewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: activeClient.id }),
       })
-    } catch { /* continue */ }
+    } catch (e) { console.error('Client setup failed:', e) }
 
     clearInterval(stepInterval)
     await refreshClients()

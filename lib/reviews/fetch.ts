@@ -25,7 +25,8 @@ export async function fetchYelpReviews(businessId: string): Promise<ReviewData[]
       author: r.user?.name || 'Anonymous',
       reviewed_at: r.time_created?.split(' ')[0] || null,
     }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Yelp reviews:', e)
     return []
   }
 }
@@ -42,7 +43,8 @@ export async function fetchYelpBusinessId(businessName: string, location: string
     if (!res.ok) return null
     const data = await res.json()
     return data.businesses?.[0]?.id || null
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Yelp business ID:', e)
     return null
   }
 }
@@ -71,7 +73,8 @@ export async function fetchG2Reviews(productSlug: string): Promise<ReviewData[]>
       }
     }
     return reviews
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch G2 reviews:', e)
     return []
   }
 }

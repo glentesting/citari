@@ -81,7 +81,8 @@ Identify the top 10 content gaps.`,
   try {
     const match = text.match(/\{[\s\S]*\}/)
     parsed = JSON.parse(match ? match[0] : text)
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse content gap analysis response:', e)
     return NextResponse.json({ error: 'Failed to parse analysis' }, { status: 500 })
   }
 

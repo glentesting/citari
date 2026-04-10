@@ -95,7 +95,8 @@ ${effectivenessTable.map((e) => `- ${e.type}: avg +${e.avgImpact}% in ${e.avgWee
         `The most effective actions include:\n${effectivenessTable.slice(0, 3).map((e) => `• ${e.type}: avg +${e.avgImpact}% improvement in ${e.avgWeeks} weeks`).join('\n')}\n\n` +
         `This data is drawn from ${entries.length} tracked actions — real results, not projections.`
       )
-    } catch {
+    } catch (e) {
+      console.error('Failed to generate proposal insights:', e)
       setProposalText('Unable to generate proposal insights. Add more playbook entries first.')
     }
     setGenerating(false)

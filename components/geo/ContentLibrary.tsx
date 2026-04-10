@@ -49,7 +49,7 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
           .eq('platform', 'wordpress')
           .eq('is_active', true)
         setWpConnections(data || [])
-      } catch { /* */ }
+      } catch (e) { console.error('Failed to load WordPress connections:', e) }
     }
     loadWP()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,7 +68,7 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
         if (data.post_url) window.open(data.post_url, '_blank')
         onUpdated()
       }
-    } catch { /* */ }
+    } catch (e) { console.error('Failed to push to WordPress:', e) }
     setPushingId(null)
   }
 

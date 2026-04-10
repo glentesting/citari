@@ -44,7 +44,7 @@ export default function NotificationsTab() {
             weekly_digest: data.weekly_digest ?? true,
           }))
         }
-      } catch { /* */ }
+      } catch (e) { console.error('Failed to load notification settings:', e) }
       setLoading(false)
     }
     load()
@@ -63,7 +63,7 @@ export default function NotificationsTab() {
         if (user) {
           await supabase.from('user_settings').update({ [key]: newVal }).eq('user_id', user.id)
         }
-      } catch { /* */ }
+      } catch (e) { console.error('Failed to save notification setting:', e) }
       setSaving(false)
     }
   }

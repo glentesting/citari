@@ -35,7 +35,8 @@ export async function testWordPressConnection(connection: CMSConnection): Promis
       signal: AbortSignal.timeout(10000),
     })
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error('WordPress connection test failed:', e)
     return false
   }
 }
@@ -105,7 +106,8 @@ export async function getWordPressCategories(
     if (!res.ok) return []
     const data = await res.json()
     return data.map((c: any) => ({ id: c.id, name: c.name }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch WordPress categories:', e)
     return []
   }
 }
@@ -121,7 +123,8 @@ export async function getWordPressTags(
     if (!res.ok) return []
     const data = await res.json()
     return data.map((t: any) => ({ id: t.id, name: t.name }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch WordPress tags:', e)
     return []
   }
 }

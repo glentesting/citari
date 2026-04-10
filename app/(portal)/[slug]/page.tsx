@@ -38,7 +38,8 @@ export default function PortalPage({ params }: { params: { slug: string } }) {
       } else {
         setData(result)
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to load portal data:', e)
       setError('Network error')
     } finally {
       setLoading(false)

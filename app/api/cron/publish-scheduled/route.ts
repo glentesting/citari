@@ -80,8 +80,8 @@ export async function GET(request: Request) {
             }
           }
         }
-      } catch {
-        // Email failed — non-critical
+      } catch (e) {
+        console.error('Email notification failed:', e)
       }
     } catch (e: any) {
       errors.push(`Failed to publish ${item.title}: ${e.message}`)

@@ -102,7 +102,8 @@ Generate 15 tracking prompts for this company.`
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text)
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse suggest-prompts AI response:', e)
     return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
   }
 

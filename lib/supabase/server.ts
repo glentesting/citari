@@ -23,8 +23,8 @@ export function createClient() {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options as any)
           )
-        } catch {
-          // Called from a Server Component — safe to ignore.
+        } catch (e) {
+          console.error('Cookie set failed (expected in Server Components):', e)
         }
       },
     },

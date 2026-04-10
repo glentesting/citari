@@ -39,7 +39,7 @@ export async function crawlCompetitorSitemap(domain: string): Promise<string[]> 
           }
           if (foundUrls.length >= 5) break
         }
-      } catch { continue }
+      } catch (e) { console.error(`Crawl failed for path ${path}:`, e); continue }
     }
     if (foundUrls.length >= 5) break
   }
@@ -85,7 +85,8 @@ async function trySitemap(domain: string): Promise<string[]> {
 
       const urls = extractSitemapUrls(xml)
       if (urls.length > 0) return urls
-    } catch {
+    } catch (e) {
+      console.error(`Sitemap parse failed for ${url}:`, e)
       continue
     }
   }
@@ -103,7 +104,8 @@ async function fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
     if (!res.ok) return []
     const xml = await res.text()
     return extractSitemapUrls(xml)
-  } catch {
+  } catch (e) {
+    console.error(`Failed to fetch sitemap URLs from ${sitemapUrl}:`, e)
     return []
   }
 }
@@ -195,7 +197,8 @@ async function scrapeHomepageLinks(domain: string): Promise<string[]> {
           ) continue
 
           urls.add(parsed.origin + parsed.pathname)
-        } catch {
+        } catch (e) {
+          console.error('Failed to parse URL:', href, e)
           continue
         }
       }
@@ -217,7 +220,8 @@ async function scrapeHomepageLinks(domain: string): Promise<string[]> {
 
         return (content.length > 0 ? content : urlArray).slice(0, MAX_PAGES)
       }
-    } catch {
+    } catch (e) {
+      console.error(`Failed to scrape homepage ${homeUrl}:`, e)
       continue
     }
   }
@@ -272,7 +276,8 @@ export async function fetchPageContent(url: string): Promise<PageContent | null>
     const excerpt = words.slice(0, 500).join(' ')
 
     return { url, title, excerpt }
-  } catch {
+  } catch (e) {
+    console.error(`Failed to fetch page content from ${url}:`, e)
     return null
   }
 }

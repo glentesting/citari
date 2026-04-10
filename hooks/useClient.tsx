@@ -83,7 +83,8 @@ export function ClientProvider({
             .update({ active_client_id: client.id })
             .eq('user_id', user.id)
         }
-      } catch {
+      } catch (e) {
+        console.error('Failed to persist active client setting:', e)
         // Settings persist failed — non-critical
       }
     },

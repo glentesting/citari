@@ -53,7 +53,8 @@ export default function Simulator({ currentScore }: SimulatorProps) {
       } else {
         setResult(data)
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to run simulation:', e)
       setError('Network error')
     } finally {
       setLoading(false)

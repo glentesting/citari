@@ -75,7 +75,8 @@ export async function discoverBacklinkOpportunities(
             links_to_competitors: linksTo,
           })
         }
-      } catch {
+      } catch (e) {
+        console.error('Backlink opportunity processing failed:', e)
         continue
       }
     }

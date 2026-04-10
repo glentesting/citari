@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         })
       }
     }
-  } catch { /* */ }
+  } catch (e: any) { console.error('Review sync failed:', e) }
 
   // Delete old non-google reviews and insert fresh
   if (allReviews.length > 0) {

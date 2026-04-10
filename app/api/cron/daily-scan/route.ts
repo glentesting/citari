@@ -189,7 +189,8 @@ export async function GET(request: Request) {
         for (const d of driftEvents) {
           driftAlerts.push(`[${client.name}] ${d.description}`)
         }
-      } catch {
+      } catch (e) {
+        console.error('Failed to process daily scan for client:', e)
         // Non-critical — continue
       }
     }

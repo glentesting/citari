@@ -59,7 +59,7 @@ export default function ContentGapAnalysis() {
         })
         const data = await res.json()
         if (res.ok) totalGaps += data.gaps || 0
-      } catch { /* continue */ }
+      } catch (e) { console.error('Failed to analyze content gaps for competitor:', e) }
     }
 
     setAnalyzeMsg(`Found ${totalGaps} content gaps`)

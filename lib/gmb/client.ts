@@ -52,7 +52,8 @@ export async function getGMBLocations(accessToken: string): Promise<GMBLocation[
       categories: [loc.categories?.primaryCategory?.displayName, ...(loc.categories?.additionalCategories?.map((c: any) => c.displayName) || [])].filter(Boolean),
       isVerified: loc.metadata?.hasVoiceOfMerchant || false,
     }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch GMB locations:', e)
     return []
   }
 }
@@ -73,7 +74,8 @@ export async function getGMBReviews(accessToken: string, locationName: string): 
       author: r.reviewer?.displayName || 'Anonymous',
       createTime: r.createTime || '',
     }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch GMB reviews:', e)
     return []
   }
 }

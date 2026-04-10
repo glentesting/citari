@@ -27,7 +27,7 @@ export default function CMSConnectionCard({ platform, name, desc, color, textCol
       try {
         const { data } = await supabase.from('cms_connections').select('id').eq('platform', platform).eq('is_active', true).limit(1)
         setConnected((data || []).length > 0)
-      } catch { /* */ }
+      } catch (e) { console.error(`CMS connection check failed for ${platform}:`, e) }
     }
     check()
     // eslint-disable-next-line react-hooks/exhaustive-deps

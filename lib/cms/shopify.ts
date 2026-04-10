@@ -14,7 +14,8 @@ export async function getShopifyBlogs(
     if (!res.ok) return []
     const data = await res.json()
     return (data.blogs || []).map((b: any) => ({ id: b.id, title: b.title }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Shopify blogs:', e)
     return []
   }
 }
@@ -62,7 +63,8 @@ export async function testShopifyConnection(siteUrl: string, accessToken: string
       signal: AbortSignal.timeout(10000),
     })
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error('Shopify connection test failed:', e)
     return false
   }
 }

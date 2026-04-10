@@ -44,7 +44,8 @@ export async function getHubSpotBlogs(
     })
     if (!res.ok) return []
     return [{ id: 'default', name: 'Blog' }]
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch HubSpot blogs:', e)
     return []
   }
 }
@@ -55,7 +56,8 @@ export async function testHubSpotConnection(accessToken: string): Promise<boolea
       signal: AbortSignal.timeout(10000),
     })
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error('HubSpot connection test failed:', e)
     return false
   }
 }

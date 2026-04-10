@@ -47,7 +47,7 @@ export default function KeywordsPage() {
         body: JSON.stringify({ client_id: activeClient.id }),
       })
       fetchKeywords()
-    } catch { /* */ }
+    } catch (e) { console.error('Keyword generation failed:', e) }
     setGenerating(false)
   }
 

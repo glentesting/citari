@@ -90,7 +90,8 @@ Generate a PR brief to get ${client.name} covered by these publications.`,
   try {
     const match = text.match(/\{[\s\S]*\}/)
     parsed = JSON.parse(match ? match[0] : text)
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse PR brief AI response:', e)
     return NextResponse.json({ error: 'Failed to parse PR brief' }, { status: 500 })
   }
 

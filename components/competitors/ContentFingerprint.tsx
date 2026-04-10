@@ -65,7 +65,8 @@ export default function ContentFingerprint({
         setCrawlMessage(`Crawled ${data.pages_crawled} pages — ${data.likely_cited} likely cited by AI`)
         await fetchContent()
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to crawl competitor content:', e)
       setCrawlMessage('Crawl failed: Network error')
     } finally {
       setCrawling(false)

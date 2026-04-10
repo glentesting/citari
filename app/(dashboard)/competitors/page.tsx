@@ -52,7 +52,7 @@ export default function CompetitorsPage() {
           fetchData()
         }
       }
-    } catch { /* */ }
+    } catch (e) { console.error('Competitor discovery failed:', e) }
     setDiscovering(false)
   }
 

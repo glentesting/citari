@@ -23,7 +23,7 @@ export default function BillingTab() {
       try {
         const { data } = await supabase.from('subscriptions').select('*').limit(1).single()
         setSub(data)
-      } catch { /* no subscription yet */ }
+      } catch (e) { console.error('Failed to load subscription:', e) }
       setLoading(false)
     }
     load()
@@ -41,7 +41,8 @@ export default function BillingTab() {
       const data = await res.json()
       if (data.url) window.location.href = data.url
       else setUpgrading(null)
-    } catch {
+    } catch (e) {
+      console.error('Failed to initiate plan upgrade:', e)
       setUpgrading(null)
     }
   }
@@ -51,7 +52,7 @@ export default function BillingTab() {
       const res = await fetch('/api/billing/portal', { method: 'POST' })
       const data = await res.json()
       if (data.url) window.location.href = data.url
-    } catch { /* */ }
+    } catch (e) { console.error('Failed to open billing portal:', e) }
   }
 
   const currentPlan = (sub?.plan as PlanId) || 'starter'

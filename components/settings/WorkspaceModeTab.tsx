@@ -38,7 +38,7 @@ export default function WorkspaceModeTab() {
             setConsultantEmail(workspace.consultant_email || '')
           }
         }
-      } catch { /* */ }
+      } catch (e) { console.error('Failed to load workspace settings:', e) }
       setLoading(false)
     }
     load()
@@ -71,7 +71,8 @@ export default function WorkspaceModeTab() {
 
         setMessage('Settings saved')
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to save workspace mode settings:', e)
       setMessage('Failed to save')
     }
     setSaving(false)

@@ -30,7 +30,7 @@ export default function WordPressConnection() {
           .select('id, site_url, is_active')
           .eq('platform', 'wordpress')
         setConnections(data || [])
-      } catch { /* */ }
+      } catch (e) { console.error('Failed to load WordPress connections:', e) }
       setLoading(false)
     }
     load()
@@ -65,7 +65,8 @@ export default function WordPressConnection() {
           .eq('platform', 'wordpress')
         setConnections(updated || [])
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to connect WordPress site:', e)
       setError('Network error')
     }
     setConnecting(false)

@@ -31,7 +31,8 @@ export async function POST(request: Request) {
       signal: AbortSignal.timeout(10000),
     })
     if (!res.ok) return NextResponse.json({ error: 'Invalid GoDaddy credentials' }, { status: 400 })
-  } catch {
+  } catch (e) {
+    console.error('Failed to connect to GoDaddy API:', e)
     return NextResponse.json({ error: 'Could not connect to GoDaddy API' }, { status: 400 })
   }
 

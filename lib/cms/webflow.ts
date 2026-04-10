@@ -12,7 +12,8 @@ export async function getWebflowSites(accessToken: string): Promise<{ id: string
     if (!res.ok) return []
     const data = await res.json()
     return (data.sites || []).map((s: any) => ({ id: s.id, name: s.displayName || s.shortName }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Webflow sites:', e)
     return []
   }
 }
@@ -29,7 +30,8 @@ export async function getWebflowCollections(
     if (!res.ok) return []
     const data = await res.json()
     return (data.collections || []).map((c: any) => ({ id: c.id, name: c.displayName, slug: c.slug }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Webflow collections:', e)
     return []
   }
 }
@@ -75,7 +77,8 @@ export async function testWebflowConnection(accessToken: string): Promise<boolea
       signal: AbortSignal.timeout(10000),
     })
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error('Webflow connection test failed:', e)
     return false
   }
 }

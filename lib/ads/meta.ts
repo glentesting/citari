@@ -45,7 +45,8 @@ export async function fetchMetaAds(searchTerm: string): Promise<MetaAd[]> {
       last_seen: ad.ad_delivery_stop_time?.split('T')[0] || new Date().toISOString().split('T')[0],
       page_name: ad.page_name || searchTerm,
     }))
-  } catch {
+  } catch (e) {
+    console.error('Failed to fetch Meta ads:', e)
     return []
   }
 }

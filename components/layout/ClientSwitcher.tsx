@@ -35,7 +35,8 @@ export default function ClientSwitcher() {
         alert(data.error || 'Failed to delete')
         return
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to delete client:', e)
       alert('Delete failed')
       return
     }

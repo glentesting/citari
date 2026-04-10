@@ -72,7 +72,8 @@ export default function AdIntelligence({
         setFetchMessage(`Found ${data.google_ads} Google ads and ${data.meta_ads} Meta ads`)
         await loadAds()
       }
-    } catch {
+    } catch (e) {
+      console.error('Failed to fetch competitor ads:', e)
       setFetchMessage('Network error')
     } finally {
       setFetching(false)
