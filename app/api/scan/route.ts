@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 import { scanPrompt } from '@/lib/ai/scan'
 import { buildClientContext } from '@/lib/utils'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 export async function POST(request: Request) {
   const cookieStore = cookies()
@@ -84,29 +84,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No active prompts to scan' }, { status: 400 })
   }
 
-  // Scan each prompt across all 3 models
+  // Scan prompts in parallel batches of 3
   const allResults: any[] = []
+  const BATCH = 3
 
-  for (const prompt of prompts) {
-    const results = await scanPrompt(prompt.text, client.name, competitorNames, clientContext)
+  for (let i = 0; i < prompts.length; i += BATCH) {
+    const batch = prompts.slice(i, i + BATCH)
+    const batchResults = await Promise.allSettled(
+      batch.map((prompt) => scanPrompt(prompt.text, client.name, competitorNames, clientContext))
+    )
 
-    for (const result of results) {
-      allResults.push({
-        prompt_id: prompt.id,
-        client_id,
-        model: result.model,
-        mentioned: result.mentioned,
-        mention_position: result.mention_position,
-        mention_quality: result.mention_quality,
-        authority_score: result.authority_score,
-        recommendation_strength: result.recommendation_strength,
-        why_competitor_wins: result.why_competitor_wins,
-        citation_sources: result.citation_sources,
-        citation_source_types: result.citation_source_types,
-        sentiment: result.sentiment,
-        response_excerpt: result.response_excerpt,
-        competitor_mentions: result.competitor_mentions,
-      })
+    for (let j = 0; j < batchResults.length; j++) {
+      const settled = batchResults[j]
+      const prompt = batch[j]
+      if (settled.status === 'fulfilled') {
+        for (const result of settled.value) {
+          allResults.push({
+            prompt_id: prompt.id,
+            client_id,
+            model: result.model,
+            mentioned: result.mentioned,
+            mention_position: result.mention_position,
+            mention_quality: result.mention_quality,
+            authority_score: result.authority_score,
+            recommendation_strength: result.recommendation_strength,
+            why_competitor_wins: result.why_competitor_wins,
+            citation_sources: result.citation_sources,
+            citation_source_types: result.citation_source_types,
+            sentiment: result.sentiment,
+            response_excerpt: result.response_excerpt,
+            competitor_mentions: result.competitor_mentions,
+          })
+        }
+      } else {
+        console.error(`Scan failed for prompt "${prompt.text.slice(0, 50)}":`, settled.reason)
+      }
     }
   }
 

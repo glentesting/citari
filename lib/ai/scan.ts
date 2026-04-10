@@ -4,6 +4,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { MODELS } from './models'
 import { detectBrandMention, detectCompetitorMentions, analyzeResponseQuality } from './analyze'
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ])
+
 export interface ScanResultRow {
   model: 'chatgpt' | 'claude' | 'gemini'
   mentioned: boolean
@@ -23,25 +31,25 @@ const SCAN_SYSTEM = 'You are a helpful assistant. When recommending businesses o
 
 async function queryChatGPT(promptText: string): Promise<string> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const response = await openai.chat.completions.create({
+  const response = await withTimeout(openai.chat.completions.create({
     model: MODELS.openai,
     messages: [
       { role: 'system', content: SCAN_SYSTEM },
       { role: 'user', content: promptText },
     ],
     max_tokens: 1500,
-  })
+  }), 20000)
   return response.choices[0]?.message?.content || ''
 }
 
 async function queryClaude(promptText: string): Promise<string> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  const response = await anthropic.messages.create({
+  const response = await withTimeout(anthropic.messages.create({
     model: MODELS.haiku,
     max_tokens: 1500,
     system: SCAN_SYSTEM,
     messages: [{ role: 'user', content: promptText }],
-  })
+  }), 20000)
   const block = response.content[0]
   return block.type === 'text' ? block.text : ''
 }
@@ -49,7 +57,7 @@ async function queryClaude(promptText: string): Promise<string> {
 async function queryGemini(promptText: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash', systemInstruction: SCAN_SYSTEM })
-  const result = await model.generateContent(promptText)
+  const result = await withTimeout(model.generateContent(promptText), 20000)
   return result.response.text()
 }
 
