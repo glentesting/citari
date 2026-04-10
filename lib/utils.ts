@@ -13,6 +13,26 @@ export function truncate(str: string, length: number): string {
 }
 
 /**
+ * Build a rich context string from client data for AI prompts.
+ * Combines all available fields into a single descriptive block.
+ */
+export function buildClientContext(client: {
+  name: string
+  industry?: string | null
+  specialization?: string | null
+  location?: string | null
+  description?: string | null
+}): string {
+  return [
+    client.name,
+    client.industry,
+    client.specialization,
+    client.location ? `Location: ${client.location}` : null,
+    client.description,
+  ].filter(Boolean).join(' | ')
+}
+
+/**
  * Safe fetch + JSON parse. Returns parsed data or throws with a readable error.
  */
 export async function safeFetchJson(url: string, options: RequestInit): Promise<any> {

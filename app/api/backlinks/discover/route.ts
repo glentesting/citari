@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  const { data: client } = await admin.from('clients').select('name, domain, industry').eq('id', client_id).single()
+  const { data: client } = await admin.from('clients').select('name, domain, industry, specialization').eq('id', client_id).single()
   if (!client || !client.domain) return NextResponse.json({ error: 'Client not found or missing domain' }, { status: 404 })
 
   const { data: competitors } = await admin.from('competitors').select('domain').eq('client_id', client_id)
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Add competitors with domains first' }, { status: 400 })
   }
 
-  const opportunities = await discoverBacklinkOpportunities(client.domain, compDomains, client.industry)
+  const opportunities = await discoverBacklinkOpportunities(client.domain, compDomains, client.specialization || client.industry)
 
   // Delete old and insert fresh
   await admin.from('backlink_opportunities').delete().eq('client_id', client_id)

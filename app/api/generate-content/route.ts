@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { generateGeoContent } from '@/lib/ai/generate'
+import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -62,13 +63,15 @@ export async function POST(request: Request) {
   // Fetch client info
   const { data: client } = await adminSupabase
     .from('clients')
-    .select('name, domain, industry')
+    .select('name, domain, industry, location, specialization, description')
     .eq('id', client_id)
     .single()
 
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
+
+  const clientContext = buildClientContext(client)
 
   // Fetch competitors
   const { data: competitors } = await adminSupabase
@@ -88,7 +91,7 @@ export async function POST(request: Request) {
       wordCount: word_count,
       clientName: client.name,
       clientDomain: client.domain || undefined,
-      clientIndustry: client.industry || undefined,
+      clientIndustry: clientContext,
       competitorNames,
     })
   } catch (e: any) {

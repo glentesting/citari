@@ -20,6 +20,9 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
   const [industry, setIndustry] = useState('')
+  const [location, setLocation] = useState('')
+  const [specialization, setSpecialization] = useState('')
+  const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [settingUp, setSettingUp] = useState(false)
@@ -51,6 +54,9 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
         name,
         domain: domain || null,
         industry: industry || null,
+        location: location || null,
+        specialization: specialization || null,
+        description: description || null,
       })
       .select()
       .single()
@@ -171,6 +177,27 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
             <input id="clientIndustry" type="text" value={industry} onChange={(e) => setIndustry(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
               placeholder="SaaS, Marketing, Roofing, etc." />
+          </div>
+
+          <div>
+            <label htmlFor="clientLocation" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input id="clientLocation" type="text" value={location} onChange={(e) => setLocation(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+              placeholder="e.g. Texas, Indiana, Georgia" />
+          </div>
+
+          <div>
+            <label htmlFor="clientSpecialization" className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+            <input id="clientSpecialization" type="text" value={specialization} onChange={(e) => setSpecialization(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+              placeholder="e.g. Healthcare business law, corporate law" />
+          </div>
+
+          <div>
+            <label htmlFor="clientDescription" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea id="clientDescription" value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
+              placeholder="Brief description of what they do and who their clients are" />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

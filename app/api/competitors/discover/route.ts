@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
+import { buildClientContext } from '@/lib/utils'
 
 const LOCAL_KEYWORDS = [
   'roofing', 'plumbing', 'hvac', 'dental', 'dentist', 'restaurant', 'law firm',
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
   const { data: client } = await adminSupabase
     .from('clients')
-    .select('name, domain, industry')
+    .select('name, domain, industry, location, specialization, description')
     .eq('id', client_id)
     .single()
 
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
 
+  const clientContext = buildClientContext(client)
   const isLocal = isLocalBusiness(client.industry, client.name)
 
   const systemPrompt = isLocal
@@ -95,11 +97,10 @@ Return ONLY valid JSON in this exact format:
 For domain, give your best guess at their website domain. If unsure, use null.
 Keep reasons concise (one sentence).`
 
-  const userPrompt = `Company: ${client.name}
+  const userPrompt = `Business: ${clientContext}
 Domain: ${client.domain || 'Not provided'}
-Industry: ${client.industry || 'Not specified'}
 
-Identify the top 5 competitors.`
+Identify the top 5 competitors for this specific business.`
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 

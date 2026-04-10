@@ -20,6 +20,9 @@ create table clients (
     name text not null,
     domain text,
     industry text,
+    location text,
+    specialization text,
+    description text,
     notes text,
     avatar_url text,
     created_at timestamptz default now()

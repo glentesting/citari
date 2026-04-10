@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  const { data: client } = await admin.from('clients').select('name, domain, industry').eq('id', client_id).single()
+  const { data: client } = await admin.from('clients').select('name, domain, industry, location, specialization, description').eq('id', client_id).single()
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
   const allReviews: any[] = []

@@ -58,7 +58,7 @@ Output format:
       : ''
 
   const industryContext = params.clientIndustry
-    ? `\nIndustry: ${params.clientIndustry}`
+    ? `\nBusiness context: ${params.clientIndustry}`
     : ''
 
   const userPrompt = `Write a ${params.contentType} for ${params.clientName}${params.clientDomain ? ` (${params.clientDomain})` : ''}.${industryContext}${competitorContext}

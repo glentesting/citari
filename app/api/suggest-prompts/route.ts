@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
+import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -45,13 +46,15 @@ export async function POST(request: Request) {
   // Fetch client info
   const { data: client } = await adminSupabase
     .from('clients')
-    .select('name, domain, industry')
+    .select('name, domain, industry, location, specialization, description')
     .eq('id', client_id)
     .single()
 
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
+
+  const clientContext = buildClientContext(client)
 
   // Fetch competitors
   const { data: competitors } = await adminSupabase
@@ -71,21 +74,23 @@ export async function POST(request: Request) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const systemPrompt = `You are an AI visibility strategist. Given a company name, industry, and list of competitors, generate the 40 most important prompts that buyers in this category are asking AI models like ChatGPT, Claude, and Gemini when researching solutions.
+  const systemPrompt = `You are an AI visibility strategist. Given detailed business context and a list of competitors, generate the 15 most important prompts that BUYERS in this specific category are asking AI models like ChatGPT, Claude, and Gemini when researching solutions.
+
+CRITICAL: The prompts MUST be specific to this business's exact specialization, services, and location. Do NOT generate generic industry prompts. Every prompt should reflect what a real potential client of THIS specific business would type.
 
 Distribute across:
-- 15 awareness prompts ("what is...", "how does...", "best practices for...")
-- 15 evaluation prompts ("best [category] for...", "[company] vs [competitor]", "alternatives to...")
-- 10 purchase prompts ("[company] pricing", "[company] reviews", "is [company] worth it")
+- 6 awareness prompts ("what is...", "how does...", "best practices for...")
+- 6 evaluation prompts ("best [specific category] for...", "[company] vs [competitor]", "alternatives to...")
+- 3 purchase prompts ("[company] pricing", "[company] reviews", "is [company] worth it")
 
 Return ONLY valid JSON in this exact format:
 {"prompts": [{"text": "...", "category": "awareness|evaluation|purchase", "reasoning": "..."}]}`
 
-  const userPrompt = `Company: ${client.name}${client.domain ? ` (${client.domain})` : ''}
-Industry: ${client.industry || 'Not specified'}
+  const userPrompt = `Business: ${clientContext}
+Domain: ${client.domain || 'Not provided'}
 Competitors: ${competitorNames.length > 0 ? competitorNames.join(', ') : 'None specified'}
 
-Generate 15 tracking prompts for this company.`
+Generate 15 tracking prompts for this specific business. Every prompt must be relevant to their exact specialization and location.`
 
   const response = await anthropic.messages.create({
     model: MODELS.haiku,

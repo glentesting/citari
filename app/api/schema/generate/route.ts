@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
+import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  const { data: client } = await admin.from('clients').select('name, domain, industry').eq('id', client_id).single()
+  const { data: client } = await admin.from('clients').select('name, domain, industry, location, specialization, description').eq('id', client_id).single()
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
   // For FAQ: fetch existing GEO content if no source_content provided
@@ -72,9 +73,8 @@ The schema must be:
 3. Include specific data provided, fill gaps with best practices
 4. Return ONLY the raw JSON object, no markdown, no explanation, no script tags
 
-Business: ${client.name}
+Business: ${buildClientContext(client)}
 Domain: ${client.domain || 'not provided'}
-Industry: ${client.industry || 'not specified'}
 Page URL: ${page_url || (client.domain ? `https://${client.domain}` : 'not provided')}`,
       messages: [{
         role: 'user',

@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
+import { buildClientContext } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   // Fetch client
   const { data: client } = await adminSupabase
     .from('clients')
-    .select('name, domain, industry')
+    .select('name, domain, industry, location, specialization, description')
     .eq('id', client_id)
     .single()
 
@@ -104,8 +105,7 @@ export async function POST(request: Request) {
     .eq('client_id', client_id)
 
   const dataBrief = `
-CLIENT: ${client.name}${client.domain ? ` (${client.domain})` : ''}
-INDUSTRY: ${client.industry || 'Not specified'}
+CLIENT: ${buildClientContext(client)}${client.domain ? ` (${client.domain})` : ''}
 COMPETITORS: ${competitorNames.join(', ') || 'None'}
 
 CURRENT VISIBILITY SCORE: ${currentScore}%
