@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { crawlCompetitorSitemap, fetchPageContent } from '@/lib/competitors/crawl'
 
+export const maxDuration = 120
+
 export async function POST(request: Request) {
   const cookieStore = cookies()
 
@@ -56,13 +58,11 @@ export async function POST(request: Request) {
   if (urls.length === 0) {
     // Last resort: try fetching the homepage itself as the only content page
     const fallbackUrl = `https://${competitor.domain}`
-    const { fetchPageContent } = await import('@/lib/competitors/crawl')
     const homePage = await fetchPageContent(fallbackUrl)
     if (!homePage) {
       return NextResponse.json({ error: `Could not access ${competitor.domain} — check the domain is correct` }, { status: 404 })
     }
-    // Use just the homepage
-    return NextResponse.json({ pages_crawled: 1, likely_cited: 0 })
+    urls.push(fallbackUrl)
   }
 
   // Fetch page content (rate-limited: sequential with small delay)
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       pages.push(content)
     }
     // Small delay to be polite
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 300))
   }
 
   // Fetch scan results to cross-reference which content might be cited
