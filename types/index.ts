@@ -54,6 +54,7 @@ export interface ScanResult {
 export interface GeoContent {
   id: string
   client_id: string
+  prompt_id: string | null
   title: string
   content: string | null
   target_prompt: string | null

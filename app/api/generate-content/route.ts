@@ -99,11 +99,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'AI generation failed — please try again' }, { status: 502 })
   }
 
+  // Look up prompt_id by matching target_prompt text
+  let prompt_id: string | null = null
+  const { data: matchedPrompt } = await adminSupabase.from('prompts')
+    .select('id').eq('client_id', client_id).eq('text', target_prompt).limit(1).single()
+  if (matchedPrompt) prompt_id = matchedPrompt.id
+
   // Save to geo_content table
   const { data: saved, error: saveError } = await adminSupabase
     .from('geo_content')
     .insert({
       client_id,
+      prompt_id,
       title: result.title,
       content: result.content,
       target_prompt,

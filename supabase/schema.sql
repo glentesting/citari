@@ -112,6 +112,7 @@ create index scan_results_client_date on scan_results (client_id, scanned_at des
 create table geo_content (
     id uuid primary key default gen_random_uuid(),
     client_id uuid references clients(id) on delete cascade,
+    prompt_id uuid references prompts(id) on delete set null,
     title text not null,
     content text,
     target_prompt text,

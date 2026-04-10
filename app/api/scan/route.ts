@@ -33,10 +33,9 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { client_id, prompt_ids, prompt_text } = body as {
+  const { client_id, prompt_ids } = body as {
     client_id: string
     prompt_ids?: string[]
-    prompt_text?: string // scan a specific prompt text (used by content publish re-scan)
   }
 
   if (!client_id) {
@@ -69,24 +68,16 @@ export async function POST(request: Request) {
   const competitorNames = (competitors || []).map((c) => c.name)
 
   // Fetch prompts to scan
-  let prompts: { id: string; text: string }[] = []
+  let promptQuery = adminSupabase.from('prompts')
+    .select('id, text').eq('client_id', client_id).eq('is_active', true)
 
-  if (prompt_text) {
-    // Find the prompt by text, or scan it directly without a DB record
-    const { data: found } = await adminSupabase.from('prompts')
-      .select('id, text').eq('client_id', client_id).ilike('text', prompt_text).limit(1)
-    prompts = found && found.length > 0 ? found : [{ id: 'rescan', text: prompt_text }]
-  } else {
-    let promptQuery = adminSupabase.from('prompts')
-      .select('id, text').eq('client_id', client_id).eq('is_active', true)
-    if (prompt_ids && prompt_ids.length > 0) {
-      promptQuery = promptQuery.in('id', prompt_ids)
-    }
-    const { data } = await promptQuery
-    prompts = data || []
+  if (prompt_ids && prompt_ids.length > 0) {
+    promptQuery = promptQuery.in('id', prompt_ids)
   }
 
-  if (prompts.length === 0) {
+  const { data: prompts } = await promptQuery
+
+  if (!prompts || prompts.length === 0) {
     return NextResponse.json({ error: 'No active prompts to scan' }, { status: 400 })
   }
 

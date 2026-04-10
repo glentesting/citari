@@ -92,15 +92,15 @@ export default function ContentLibrary({ content, onUpdated }: ContentLibraryPro
       })
       .eq('id', id)
 
-    // Trigger re-scan of the target prompt this content was created for
+    // Trigger re-scan of the prompt this content was created for
     const item = content.find((c) => c.id === id)
-    if (item?.target_prompt && activeClient) {
+    if (activeClient && item?.prompt_id) {
       fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_id: activeClient.id,
-          prompt_text: item.target_prompt,
+          prompt_ids: [item.prompt_id],
         }),
       }).catch((e) => console.error('Re-scan after publish failed:', e))
     }
