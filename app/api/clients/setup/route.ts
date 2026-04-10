@@ -4,8 +4,15 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
-import { searchKeyword } from '@/lib/keywords/serper'
 import { buildClientContext } from '@/lib/utils'
+
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ])
 
 export const maxDuration = 60
 
@@ -46,22 +53,18 @@ export async function POST(request: Request) {
 
   const clientContext = buildClientContext(client)
   const steps: string[] = []
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    timeout: 20000,
-    maxRetries: 0,
-  })
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   // ── STEP 1: Discover competitors ──
   console.log('Starting Step 1: competitor discovery')
   let competitorNames: string[] = []
   try {
-    const res = await anthropic.messages.create({
+    const res = await withTimeout(anthropic.messages.create({
       model: MODELS.sonnet,
       max_tokens: 1024,
       system: `Identify the top 5 direct competitors for this business. They must be in the same specialization AND serve the same geographic area. Return ONLY valid JSON: {"competitors":[{"name":"...","domain":"..."}]}`,
       messages: [{ role: 'user', content: `Business: ${clientContext}\nDomain: ${client.domain || 'N/A'}` }],
-    })
+    }), 25000)
 
     const text = res.content[0].type === 'text' ? res.content[0].text : ''
     const match = text.match(/\{[\s\S]*\}/)
@@ -87,12 +90,12 @@ export async function POST(request: Request) {
   // ── STEP 2: Generate tracking prompts ──
   console.log('Starting Step 2: prompts')
   try {
-    const res = await anthropic.messages.create({
+    const res = await withTimeout(anthropic.messages.create({
       model: MODELS.sonnet,
       max_tokens: 2048,
       system: `Generate 10 tracking prompts — these are questions that POTENTIAL CUSTOMERS would ask an AI model when looking for this type of business or service. Every prompt MUST be specific to this business's exact specialization and locations. Include the actual location names. Do NOT generate generic industry prompts. Return ONLY valid JSON: {"prompts":[{"text":"...","category":"awareness|evaluation|purchase"}]}`,
       messages: [{ role: 'user', content: `Business: ${clientContext}\nDomain: ${client.domain || 'N/A'}\nCompetitors: ${competitorNames.join(', ') || 'Unknown'}` }],
-    })
+    }), 25000)
 
     const text = res.content[0].type === 'text' ? res.content[0].text : ''
     const match = text.match(/\{[\s\S]*\}/)
@@ -123,12 +126,12 @@ export async function POST(request: Request) {
         ? (await admin.from('competitors').select('domain').eq('client_id', client_id)).data?.map((c) => c.domain).filter(Boolean) as string[] || []
         : []
 
-      const kwRes = await anthropic.messages.create({
+      const kwRes = await withTimeout(anthropic.messages.create({
         model: MODELS.sonnet,
         max_tokens: 1024,
         system: `Generate 8 keywords that a POTENTIAL CLIENT would type into Google when searching for this type of business. Focus exclusively on buyer-intent keywords.${client.location ? ` Include location-specific keywords for: ${client.location}.` : ''}\n\nDo NOT generate directory names, award sites, publication names, or industry association terms. Only real search queries from real potential clients.\n\nReturn ONLY valid JSON: {"keywords":["keyword1","keyword2",...]}`,
         messages: [{ role: 'user', content: `Business: ${clientContext}\nDomain: ${client.domain || 'N/A'}` }],
-      })
+      }), 25000)
 
       const kwText = kwRes.content[0].type === 'text' ? kwRes.content[0].text : ''
       const kwMatch = kwText.match(/\{[\s\S]*\}/)

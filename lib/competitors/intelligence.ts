@@ -2,6 +2,14 @@ import Anthropic from '@anthropic-ai/sdk'
 import { MODELS } from '@/lib/ai/models'
 import { buildClientContext } from '@/lib/utils'
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+    ),
+  ])
+
 export interface CompetitorIntelligence {
   why_winning: string
   content_gaps: string
@@ -42,14 +50,14 @@ export async function generateCompetitorIntelligence(
   competitorContent: CompetitorContent[],
   scanContext?: string
 ): Promise<CompetitorIntelligence> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 30000, maxRetries: 0 })
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const clientContext = buildClientContext(client)
 
   const contentSummary = competitorContent
     .map((c) => `${c.title}: ${c.excerpt.slice(0, 300)}`)
     .join('\n\n')
 
-  const response = await anthropic.messages.create({
+  const response = await withTimeout(anthropic.messages.create({
     model: MODELS.sonnet,
     max_tokens: 3000,
     system: `You are a senior competitive intelligence analyst. Your job is to explain exactly why a competitor is winning more customers than your client, and what to do about it. Be specific, direct, and ruthless. No fluff.
@@ -78,7 +86,7 @@ Return ONLY valid JSON:
         scanContext ? `\nAI SCAN RESULTS (where this competitor appears in AI model responses):\n${scanContext}` : '',
       ].join('\n'),
     }],
-  })
+  }), 30000)
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
   const match = text.match(/\{[\s\S]*\}/)
