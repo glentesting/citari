@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useClient } from '@/hooks/useClient'
+import { runBackgroundJob, onJobUpdate } from '@/lib/jobs'
 
 interface NarrativeGeneratorProps {
   onGenerated?: (narrative: string) => void
@@ -13,33 +14,33 @@ export default function NarrativeGenerator({ onGenerated }: NarrativeGeneratorPr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function generate() {
+  useEffect(() => {
+    const unsub = onJobUpdate((job) => {
+      if (job.id === `narrative-${activeClient?.id}`) {
+        if (job.status === 'done') {
+          setLoading(false)
+          // Re-fetch the narrative from the reports table
+          setNarrative('Narrative generated — switch to the Reports tab to view it.')
+        } else if (job.status === 'error') {
+          setLoading(false)
+          setError(job.error || 'Generation failed')
+        }
+      }
+    })
+    return unsub
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient])
+
+  function generate() {
     if (!activeClient) return
     setLoading(true)
     setError(null)
-
-    try {
-      const res = await fetch('/api/generate-narrative', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: activeClient.id }),
-        keepalive: true,
-      })
-
-      const text = await res.text()
-      if (!text) { setError('Server timed out — try again'); setLoading(false); return }
-      const data = JSON.parse(text)
-      if (!res.ok) {
-        setError(data.error || 'Failed to generate narrative')
-      } else {
-        setNarrative(data.narrative)
-        onGenerated?.(data.narrative)
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Request failed — check API keys in Vercel')
-    } finally {
-      setLoading(false)
-    }
+    runBackgroundJob(
+      `narrative-${activeClient.id}`,
+      'Generating narrative',
+      '/api/generate-narrative',
+      { client_id: activeClient.id }
+    )
   }
 
   return (

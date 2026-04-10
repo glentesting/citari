@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useClient } from '@/hooks/useClient'
+import { runBackgroundJob, onJobUpdate } from '@/lib/jobs'
 import PageHeader from '@/components/layout/PageHeader'
 import PlatformCards from '@/components/visibility/PlatformCards'
 import AddPromptForm from '@/components/visibility/AddPromptForm'
@@ -54,34 +55,34 @@ export default function VisibilityPage() {
     fetchData()
   }, [fetchData])
 
-  async function runScan() {
+  // Listen for background job completion
+  useEffect(() => {
+    const unsub = onJobUpdate((job) => {
+      if (job.id === `scan-${activeClient?.id}`) {
+        if (job.status === 'done') {
+          setScanning(false)
+          setScanMessage('Scan complete — refresh to see results')
+          fetchData()
+        } else if (job.status === 'error') {
+          setScanning(false)
+          setScanMessage(`Scan failed: ${job.error}`)
+        }
+      }
+    })
+    return unsub
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient])
+
+  function runScan() {
     if (!activeClient) return
     setScanning(true)
     setScanMessage(null)
-
-    try {
-      const res = await fetch('/api/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: activeClient.id }),
-        keepalive: true,
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setScanMessage(`Scan failed: ${data.error}`)
-      } else {
-        setScanMessage(
-          `Scan complete — ${data.scanned} prompt${data.scanned !== 1 ? 's' : ''} scanned, ${data.summary.total_mentions}/${data.summary.total_results} mentions detected.`
-        )
-        await fetchData()
-      }
-    } catch (err) {
-      setScanMessage('Scan failed: Network error')
-    } finally {
-      setScanning(false)
-    }
+    runBackgroundJob(
+      `scan-${activeClient.id}`,
+      'Running AI scan',
+      '/api/scan',
+      { client_id: activeClient.id }
+    )
   }
 
   // Compute platform stats from scan results

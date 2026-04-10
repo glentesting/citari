@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import { ClientProviderWrapper } from '@/components/layout/ClientProviderWrapper'
+import BackgroundJobToast from '@/components/layout/BackgroundJobToast'
 
 export default async function DashboardLayout({
   children,
@@ -48,6 +49,7 @@ export default async function DashboardLayout({
           </div>
         </main>
       </div>
+      <BackgroundJobToast />
     </ClientProviderWrapper>
   )
 }

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useClient } from '@/hooks/useClient'
+import { runBackgroundJob, onJobUpdate } from '@/lib/jobs'
 
 export default function PRBrief() {
   const { activeClient } = useClient()
@@ -9,26 +10,33 @@ export default function PRBrief() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function generate() {
+  useEffect(() => {
+    const unsub = onJobUpdate((job) => {
+      if (job.id === `pr-brief-${activeClient?.id}`) {
+        if (job.status === 'done') {
+          setLoading(false)
+          setResult({ summary: 'PR Brief generated — refresh to view full results.' })
+        } else if (job.status === 'error') {
+          setLoading(false)
+          setError(job.error || 'Generation failed')
+        }
+      }
+    })
+    return unsub
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient])
+
+  function generate() {
     if (!activeClient) return
     setLoading(true)
     setError(null)
     setResult(null)
-
-    try {
-      const res = await fetch('/api/generate-pr-brief', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: activeClient.id }),
-        keepalive: true,
-      })
-      const text = await res.text()
-      if (!text) { setError('Server timed out — try again'); setLoading(false); return }
-      const data = JSON.parse(text)
-      if (!res.ok) setError(data.error || 'Request failed')
-      else setResult(data)
-    } catch (err: any) { setError(err?.message || 'Request failed — check API keys') }
-    setLoading(false)
+    runBackgroundJob(
+      `pr-brief-${activeClient.id}`,
+      'Generating PR brief',
+      '/api/generate-pr-brief',
+      { client_id: activeClient.id }
+    )
   }
 
   return (
