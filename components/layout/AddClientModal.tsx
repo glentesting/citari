@@ -279,8 +279,8 @@ export default function AddClientModal({ onClose }: AddClientModalProps) {
             </div>
           )}
 
-          {/* Editable fields — shown when no scan result, scan failed, or user clicks Edit */}
-          {(editing || (!scanResult && !scanning)) && (
+          {/* Editable fields — shown only when user clicks Edit or scan failed */}
+          {(editing || scanError) && (
             <div className="space-y-3">
               {editing && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Edit details</p>}
               <div>
