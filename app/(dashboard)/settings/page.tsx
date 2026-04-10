@@ -92,6 +92,15 @@ export default function SettingsPage() {
                 ]}
               />
               <CMSConnectionCard
+                platform="gmb" name="Google Business Profile" desc="Sync reviews, ratings, and business info from Google"
+                color="bg-red-100" textColor="text-red-600"
+                connectEndpoint="/api/integrations/gmb/connect"
+                fields={[
+                  { key: 'access_token', label: 'OAuth Access Token', placeholder: 'ya29.xxxxx', type: 'password',
+                    help: 'Generate a token via Google Cloud Console with Business Profile API scope enabled' },
+                ]}
+              />
+              <CMSConnectionCard
                 platform="godaddy" name="GoDaddy" desc="Domain management and DNS verification"
                 color="bg-gray-100" textColor="text-gray-600"
                 connectEndpoint="/api/integrations/godaddy/connect"
