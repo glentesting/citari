@@ -24,6 +24,7 @@ const typeColors: Record<string, string> = {
 export default function CitationSourceBreakdown() {
   const { activeClient } = useClient()
   const [sources, setSources] = useState<SourceData[]>([])
+  const [hitList, setHitList] = useState<{ platform: string; competitors_on_it: string[]; priority: string; action: string }[]>([])
   const [recommendation, setRecommendation] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -76,6 +77,50 @@ export default function CitationSourceBreakdown() {
       else if (reviewSite === 0) setRecommendation('Zero review site citations. Getting 20+ reviews on G2 or Google could significantly increase AI authority.')
       else setRecommendation('Good citation diversity. Focus on increasing volume across your strongest sources.')
 
+      // Build cross-competitor hit list
+      const { data: allScans } = await supabase
+        .from('scan_results')
+        .select('citation_sources, citation_source_types, competitor_mentions, mentioned')
+        .eq('client_id', activeClient!.id)
+        .gte('scanned_at', thirtyDaysAgo.toISOString())
+
+      const { data: competitors } = await supabase
+        .from('competitors')
+        .select('name')
+        .eq('client_id', activeClient!.id)
+
+      const compNames = (competitors || []).map((c) => c.name)
+      const clientPlatforms = new Set<string>()
+      const compPlatforms = new Map<string, Set<string>>()
+
+      for (const scan of (allScans || [])) {
+        const srcs = scan.citation_sources || []
+        for (const src of srcs) {
+          const s = (src as string).toLowerCase()
+          if (scan.mentioned) clientPlatforms.add(s)
+          for (const cn of compNames) {
+            if ((scan.competitor_mentions || []).includes(cn)) {
+              const existing = compPlatforms.get(s)
+              if (existing) existing.add(cn)
+              else compPlatforms.set(s, new Set([cn]))
+            }
+          }
+        }
+      }
+
+      const hits = Array.from(compPlatforms.entries())
+        .filter(([platform]) => !clientPlatforms.has(platform))
+        .map(([platform, comps]) => ({
+          platform,
+          competitors_on_it: [...comps],
+          priority: comps.size >= 2 ? 'high' : 'medium',
+          action: `Get listed on ${platform}`,
+        }))
+        .sort((a, b) => (a.priority === 'high' ? 0 : 1) - (b.priority === 'high' ? 0 : 1))
+        .slice(0, 5)
+
+      setHitList(hits)
+
       setLoading(false)
     }
     load()
@@ -115,6 +160,25 @@ export default function CitationSourceBreakdown() {
 
       {recommendation && (
         <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">{recommendation}</p>
+      )}
+
+      {hitList.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Competitors are cited here — you're not</p>
+          <div className="space-y-2">
+            {hitList.map((h, i) => (
+              <div key={i} className="flex items-center justify-between bg-red-50 rounded-lg px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{h.platform}</p>
+                  <p className="text-[10px] text-gray-500">{h.competitors_on_it.join(', ')} cited here</p>
+                </div>
+                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${h.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {h.priority}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
